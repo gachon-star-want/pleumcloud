@@ -20,7 +20,7 @@ export default function App() {
         onConnect={() => setView("connect")}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar view={view} onHome={() => setView("drive")} />
+        <TopBar view={view} onHome={() => setView("drive")} onConnect={() => setView("connect")} />
         <main className="flex-1 overflow-y-auto p-6">
           {view === "connect" ? (
             <ConnectPanel />

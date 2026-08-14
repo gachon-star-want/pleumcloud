@@ -9,9 +9,9 @@ export default function EmptyState({ hasAccounts, onConnect }: EmptyStateProps) 
   return (
     <div className="grid h-full place-items-center">
       <div className="max-w-md text-center">
-        <div className="mb-6 flex items-center justify-center gap-3">
+        <div className="mb-6 flex items-center justify-center gap-4">
           {["gdrive", "mybox", "dropbox", "drime"].map((id) => (
-            <ProviderLogo key={id} id={id} className="h-10" />
+            <ProviderLogo key={id} id={id} className="size-11" />
           ))}
         </div>
         <h2 className="mb-2 text-2xl font-bold">

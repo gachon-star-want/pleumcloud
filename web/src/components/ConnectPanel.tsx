@@ -58,9 +58,7 @@ function ProviderCard({ p }: { p: ProviderMeta }) {
       onClick={connect}
       className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:shadow"
     >
-      <span className="grid h-12 w-12 shrink-0 place-items-center">
-        <ProviderLogo id={p.id} />
-      </span>
+      <ProviderLogo id={p.id} className="size-11" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold">
           {p.name}

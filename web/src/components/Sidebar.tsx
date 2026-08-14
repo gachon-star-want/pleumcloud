@@ -13,7 +13,7 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
   });
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
+    <aside className="hidden w-72 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
       <div className="flex items-center gap-2 px-5 pb-2 pt-5">
         <span className="text-2xl leading-none">☁️</span>
         <span className="text-lg font-bold tracking-tight">PleumCloud</span>
@@ -83,13 +83,12 @@ function QuotaRibbon({ providers }: { providers: ProviderMeta[] }) {
   // Placeholder until real quota data arrives with the first connector (M3).
   return (
     <div className="border-t border-slate-200 p-4">
-      <div className="mb-1.5 flex justify-between text-xs text-slate-500">
-        <span>0 GB used</span>
-        <span>of {providers.length > 0 ? "…" : "0"} GB free</span>
-      </div>
+      <p className="mb-1.5 text-xs text-slate-500">
+        Usage appears once you connect clouds.
+      </p>
       <div className="flex gap-1">
-        {providers.slice(0, 6).map((p) => (
-          <div
+        {providers.slice(0, 8).map((p) => (
+          <span
             key={p.id}
             className="h-1.5 flex-1 rounded-full"
             style={{ background: providerDot(p.id), opacity: 0.35 }}

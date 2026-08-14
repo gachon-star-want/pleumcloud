@@ -1,0 +1,17 @@
+{
+  "name": "PleumCloud",
+  "short_name": "PleumCloud",
+  "description": "All your free cloud storage, one drive.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
