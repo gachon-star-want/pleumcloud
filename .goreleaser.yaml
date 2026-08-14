@@ -1,0 +1,53 @@
+version: 2
+
+project_name: pleumcloud
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    # The embedded SPA must be built before the Go binary embeds it.
+    hooks:
+      pre:
+        - cmd: bash -c "cd web && npm ci && npm run build"
+          output: true
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+
+brews:
+  - repository:
+      owner: pleumcloud
+      name: homebrew-tap
+    homepage: https://pleumcloud.dev
+    description: All your free cloud storage, one drive.
+    install: |
+      bin.install "pleumcloud"
