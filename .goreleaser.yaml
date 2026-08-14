@@ -43,11 +43,3 @@ changelog:
       - "^chore:"
       - "^test:"
 
-brews:
-  - repository:
-      owner: pleumcloud
-      name: homebrew-tap
-    homepage: https://pleumcloud.dev
-    description: All your free cloud storage, one drive.
-    install: |
-      bin.install "pleumcloud"

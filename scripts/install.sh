@@ -8,7 +8,7 @@
 # no runtime dependencies to install.
 set -euo pipefail
 
-REPO="${PLEUMCLOUD_REPO:-pleumcloud/pleumcloud}"
+REPO="${PLEUMCLOUD_REPO:-gachon-star-want/pleumcloud}"
 INSTALL_DIR_HINT="${PLEUMCLOUD_INSTALL_DIR:-}"
 
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }

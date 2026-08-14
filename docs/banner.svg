@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 200" width="840" height="200" role="img" aria-label="PleumCloud">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft backdrop -->
+  <rect x="0" y="0" width="840" height="200" rx="24" fill="#f8fafc"/>
+
+  <!-- cloud mark -->
+  <g transform="translate(88,38)">
+    <rect x="0" y="0" width="124" height="124" rx="28" fill="url(#sky)"/>
+    <path d="M78 47a22 22 0 0 0-21-15 22 22 0 0 0-20 12.5A17.5 17.5 0 0 0 30 61.5 17.5 17.5 0 0 0 47.5 79h37a14.6 14.6 0 0 0 1.6-29.1 22 22 0 0 0-8.1-2.9z" fill="#ffffff"/>
+    <circle cx="52" cy="88" r="3.2" fill="#ffffff" opacity=".85"/>
+    <circle cx="64" cy="92" r="2.4" fill="#ffffff" opacity=".7"/>
+    <circle cx="74" cy="88" r="2.8" fill="#ffffff" opacity=".55"/>
+  </g>
+
+  <!-- wordmark -->
+  <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+    <text x="252" y="112" font-size="64" font-weight="800" fill="#0f172a" letter-spacing="-1">Pleum<tspan fill="#2563eb">Cloud</tspan></text>
+    <text x="255" y="150" font-size="21" font-weight="500" fill="#64748b">one drive for all your free cloud storage</text>
+  </g>
+</svg>
