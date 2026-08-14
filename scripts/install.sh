@@ -57,7 +57,11 @@ tar -xzf "$TMP/$ASSET" -C "$TMP"
 
 # ---- choose install location ----------------------------------------------
 BIN="$TMP/pleumcloud"
-[[ -f "$BIN" ]] || die "Release archive did not contain a 'pleumcloud' binary"
+# Archives store the binary at the root; tolerate a single wrapper dir too.
+if [[ ! -f "$BIN" ]]; then
+  BIN=$(find "$TMP" -maxdepth 2 -type f -name pleumcloud | head -1)
+fi
+[[ -n "$BIN" && -f "$BIN" ]] || die "Release archive did not contain a 'pleumcloud' binary"
 
 if [[ -n "$INSTALL_DIR_HINT" ]]; then
   BINDIR="$INSTALL_DIR_HINT"
