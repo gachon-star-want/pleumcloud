@@ -13,6 +13,7 @@ const (
 	envDataDir  = "PLEUMCLOUD_DATA"
 	envPort     = "PLEUMCLOUD_PORT"
 	envBind     = "PLEUMCLOUD_BIND"
+	envNoBrowser = "PLEUMCLOUD_NO_BROWSER"
 )
 
 // Config holds resolved runtime settings.
@@ -23,6 +24,8 @@ type Config struct {
 	// Bind is the listen host. Local-first default is loopback only;
 	// server mode (post-MVP) will set 0.0.0.0 explicitly.
 	Bind string
+	// NoBrowser skips auto-opening the default browser on startup.
+	NoBrowser bool
 }
 
 func Load() (*Config, error) {
@@ -50,6 +53,10 @@ func Load() (*Config, error) {
 	if v := os.Getenv(envBind); v != "" {
 		cfg.Bind = v
 	}
+	switch os.Getenv(envNoBrowser) {
+	case "1", "true", "yes":
+		cfg.NoBrowser = true
+	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0o700); err != nil {
 		return nil, fmt.Errorf("create data dir: %w", err)
@@ -62,3 +69,13 @@ func (c *Config) DBPath() string { return filepath.Join(c.DataDir, "pleumcloud.s
 
 // Addr returns the full listen address.
 func (c *Config) BindAddr() string { return fmt.Sprintf("%s:%d", c.Bind, c.Port) }
+
+// LocalURL returns the URL users open in a browser, normalizing wildcard
+// binds to loopback.
+func (c *Config) LocalURL() string {
+	host := c.Bind
+	if host == "0.0.0.0" || host == "::" || host == "[::]" {
+		host = "127.0.0.1"
+	}
+	return fmt.Sprintf("http://%s:%d", host, c.Port)
+}

@@ -71,11 +71,5 @@ func spaFallback(dist fs.FS, fileServer http.Handler) http.HandlerFunc {
 	}
 }
 
-// ListenAndServe starts the HTTP server on addr.
-func (s *Server) ListenAndServe(addr string) error {
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-	return http.Serve(ln, s.handler)
-}
+// Serve runs the HTTP server on an already-bound listener.
+func (s *Server) Serve(ln net.Listener) error { return http.Serve(ln, s.handler) }
