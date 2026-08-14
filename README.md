@@ -104,7 +104,7 @@ including every service we evaluated and rejected, lives in
 **macOS / Linux:**
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 Then run `pleumcloud` — your browser opens at `http://localhost:7777`.

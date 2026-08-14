@@ -26,7 +26,7 @@ Google 15 Go, OneDrive 5 Go, pCloud 10 Go… vous avez déjà **plus de 100 Go g
 ## Installation (macOS / Linux)
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 Lancez `pleumcloud` — votre navigateur s'ouvre sur `http://localhost:7777`.

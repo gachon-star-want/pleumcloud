@@ -25,7 +25,7 @@ Google 15GB、Naver MyBox 30GB、OneDrive 5GB、pCloud 10GB…あなたはすで
 ## インストール (macOS / Linux)
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 `pleumcloud` を実行すると、ブラウザが `http://localhost:7777` で開きます。

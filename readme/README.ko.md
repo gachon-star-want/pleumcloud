@@ -25,7 +25,7 @@
 ## 설치 (macOS / Linux)
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 실행하면 `pleumcloud` — 브라우저가 `http://localhost:7777`에 자동으로 열립니다.

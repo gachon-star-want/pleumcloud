@@ -26,7 +26,7 @@ Google 15GB, OneDrive 5GB, pCloud 10GB… kamu sudah punya **lebih dari 100GB gr
 ## Instalasi (macOS / Linux)
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 Jalankan `pleumcloud` — browser akan terbuka di `http://localhost:7777`.

@@ -26,7 +26,7 @@ Google 15GB, OneDrive 5GB, pCloud 10GB… bạn đã có **hơn 100GB miễn ph�
 ## Cài đặt (macOS / Linux)
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 Chạy `pleumcloud` — trình duyệt sẽ mở tại `http://localhost:7777`.

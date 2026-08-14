@@ -26,7 +26,7 @@ Google 15 ГБ, OneDrive 5 ГБ, pCloud 10 ГБ… у вас уже есть **�
 ## Установка (macOS / Linux)
 
 ```bash
-curl -fsSL https://pleumcloud.dev/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
 ```
 
 Запустите `pleumcloud` — браузер откроет `http://localhost:7777`.
