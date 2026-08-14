@@ -22,6 +22,7 @@ import (
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/mybox"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/onedrive"
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/pcloud"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/webdav"
 )
 
