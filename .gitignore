@@ -14,6 +14,7 @@ web/node_modules/
 web/dist/*
 !web/dist/.gitkeep
 web/.vite/
+web/tsconfig.tsbuildinfo
 
 # Local data (never commit user tokens or databases)
 *.sqlite
