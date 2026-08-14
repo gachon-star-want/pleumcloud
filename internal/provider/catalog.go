@@ -31,7 +31,7 @@ var Catalog = []Metadata{
 		DocsURL: "https://www.mediafire.com/developers/",
 		// 10 GB base, expandable to ~50 GB via bonuses; official REST API
 		// with app registration. Added after the namu.wiki list review (2026-08).
-		},
+	},
 	{ID: "yandex", Name: "Yandex Disk", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 5},
 	{ID: "hidrive", Name: "STRATO HiDrive", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 0},
 	{ID: "jottacloud", Name: "Jottacloud", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 5},

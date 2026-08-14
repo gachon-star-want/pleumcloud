@@ -179,10 +179,10 @@ func (c *connector) List(ctx context.Context, acct provider.AccountRef, parentRe
 		return nil, "", err
 	}
 	q := url.Values{
-		"q":        {fmt.Sprintf("'%s' in parents and trashed = false", parentRemoteID)},
-		"fields":   {"files(" + fieldsCommon + "),nextPageToken"},
-		"pageSize": {"200"},
-		"supportsAllDrives": {"true"},
+		"q":                         {fmt.Sprintf("'%s' in parents and trashed = false", parentRemoteID)},
+		"fields":                    {"files(" + fieldsCommon + "),nextPageToken"},
+		"pageSize":                  {"200"},
+		"supportsAllDrives":         {"true"},
 		"includeItemsFromAllDrives": {"true"},
 	}
 	if pageToken != "" {
@@ -257,19 +257,19 @@ func (c *connector) Changes(ctx context.Context, acct provider.AccountRef, curso
 		return provider.Changes{Cursor: start.StartPageToken}, nil
 	}
 	q := url.Values{
-		"pageToken":           {cursor},
-		"includeRemoved":      {"true"},
-		"restrictToMyDrive":   {"false"},
-		"supportsAllDrives":   {"true"},
+		"pageToken":                 {cursor},
+		"includeRemoved":            {"true"},
+		"restrictToMyDrive":         {"false"},
+		"supportsAllDrives":         {"true"},
 		"includeItemsFromAllDrives": {"true"},
-		"fields":              {"changes(fileId,removed,file(" + fieldsCommon + ",trashed)),newStartPageToken,nextPageToken"},
-		"pageSize":            {"500"},
+		"fields":                    {"changes(fileId,removed,file(" + fieldsCommon + ",trashed)),newStartPageToken,nextPageToken"},
+		"pageSize":                  {"500"},
 	}
 	var out struct {
 		Changes []struct {
-			FileID  string  `json:"fileId"`
-			Removed bool    `json:"removed"`
-			File    gdFile  `json:"file"`
+			FileID  string `json:"fileId"`
+			Removed bool   `json:"removed"`
+			File    gdFile `json:"file"`
 		} `json:"changes"`
 		NewStartPageToken string `json:"newStartPageToken"`
 		NextPageToken     string `json:"nextPageToken"`

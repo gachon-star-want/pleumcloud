@@ -275,7 +275,6 @@ func (c *connector) ShareLink(ctx context.Context, acct provider.AccountRef, rem
 	return "", provider.ErrUnsupported
 }
 
-
 // Validate checks credentials at connect time (used by the API layer).
 func (c *connector) Validate(cb credBundle) error {
 	cl := gowebdav.NewClient(strings.TrimRight(cb.URL, "/"), cb.Username, cb.Password)
@@ -285,4 +284,3 @@ func (c *connector) Validate(cb credBundle) error {
 	}
 	return nil
 }
-

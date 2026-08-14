@@ -27,10 +27,10 @@ var ErrNoClientID = errors.New("no OAuth client configured for this provider —
 
 // Spec describes one provider's OAuth endpoints.
 type Spec struct {
-	AuthURL    string   `json:"authUrl"`
-	TokenURL   string   `json:"tokenUrl"`
-	Scopes     []string `json:"scopes"`
-	UsePKCE    bool     `json:"usePkce"`
+	AuthURL  string   `json:"authUrl"`
+	TokenURL string   `json:"tokenUrl"`
+	Scopes   []string `json:"scopes"`
+	UsePKCE  bool     `json:"usePkce"`
 	// ExtraAuthParams are appended to the authorization request
 	// (e.g. Dropbox's token_access_type=offline).
 	ExtraAuthParams url.Values `json:"-"`

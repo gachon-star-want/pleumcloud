@@ -20,10 +20,10 @@ import (
 
 // API bundles handler dependencies.
 type API struct {
-	store    *store.Store
-	secrets  secret.Store
-	oauth    *oauthflow.Manager
-	version  string
+	store   *store.Store
+	secrets secret.Store
+	oauth   *oauthflow.Manager
+	version string
 }
 
 // New wires the API handlers.

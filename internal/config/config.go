@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	DefaultPort = 7777
-	envDataDir  = "PLEUMCLOUD_DATA"
-	envPort     = "PLEUMCLOUD_PORT"
-	envBind     = "PLEUMCLOUD_BIND"
+	DefaultPort  = 7777
+	envDataDir   = "PLEUMCLOUD_DATA"
+	envPort      = "PLEUMCLOUD_PORT"
+	envBind      = "PLEUMCLOUD_BIND"
 	envNoBrowser = "PLEUMCLOUD_NO_BROWSER"
 )
 

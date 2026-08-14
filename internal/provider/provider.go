@@ -38,12 +38,12 @@ const (
 
 // Metadata is static provider information safe to expose to the UI.
 type Metadata struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	AuthKind    AuthKind `json:"authKind"`
-	Tier        Tier    `json:"tier"`
-	FreeTierGB  int     `json:"freeTierGB"`
-	DocsURL     string  `json:"docsUrl,omitempty"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	AuthKind   AuthKind `json:"authKind"`
+	Tier       Tier     `json:"tier"`
+	FreeTierGB int      `json:"freeTierGB"`
+	DocsURL    string   `json:"docsUrl,omitempty"`
 	// MaxUploadBytes is the largest single file the free tier accepts
 	// (0 = unknown or unlimited).
 	MaxUploadBytes int64 `json:"maxUploadBytes,omitempty"`
@@ -75,10 +75,10 @@ type Quota struct {
 
 // Changes is a page of incremental updates from a provider delta feed.
 type Changes struct {
-	Cursor  string   `json:"cursor"`
-	Upserted []File  `json:"upserted"`
-	Deleted []string `json:"deleted"` // remote IDs
-	HasMore bool     `json:"hasMore"`
+	Cursor   string   `json:"cursor"`
+	Upserted []File   `json:"upserted"`
+	Deleted  []string `json:"deleted"` // remote IDs
+	HasMore  bool     `json:"hasMore"`
 }
 
 // ProgressFn receives cumulative byte counts during long transfers.

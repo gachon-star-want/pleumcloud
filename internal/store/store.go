@@ -4,8 +4,8 @@ package store
 
 import (
 	crand "crypto/rand"
-	"encoding/hex"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -41,10 +41,10 @@ func (s *Store) Ping() error { return s.db.Ping() }
 // Account is a connected cloud account (one per provider login; the same
 // provider may appear multiple times with different labels).
 type Account struct {
-	ID           string    `json:"id"`
-	ProviderID   string    `json:"providerId"`
-	Label        string    `json:"label"`
-	CreatedAt    time.Time `json:"createdAt"`
+	ID           string     `json:"id"`
+	ProviderID   string     `json:"providerId"`
+	Label        string     `json:"label"`
+	CreatedAt    time.Time  `json:"createdAt"`
 	LastSyncedAt *time.Time `json:"lastSyncedAt,omitempty"`
 }
 
