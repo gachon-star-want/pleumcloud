@@ -19,6 +19,7 @@ import (
 	"github.com/pleumcloud/pleumcloud/internal/ui"
 
 	// Connectors self-register into the provider registry.
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/bridge"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/drime"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/dropbox"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
