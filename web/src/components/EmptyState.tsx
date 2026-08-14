@@ -1,3 +1,5 @@
+import ProviderLogo from "./ProviderLogo";
+
 interface EmptyStateProps {
   hasAccounts: boolean;
   onConnect: () => void;
@@ -7,13 +9,9 @@ export default function EmptyState({ hasAccounts, onConnect }: EmptyStateProps) 
   return (
     <div className="grid h-full place-items-center">
       <div className="max-w-md text-center">
-        <div className="mx-auto mb-6 flex -space-x-3">
-          {["#4285f4", "#03c75a", "#0061ff", "#7c5cff"].map((c) => (
-            <span
-              key={c}
-              className="size-10 rounded-full border-4 border-slate-100"
-              style={{ background: c }}
-            />
+        <div className="mb-6 flex items-center justify-center gap-3">
+          {["gdrive", "mybox", "dropbox", "drime"].map((id) => (
+            <ProviderLogo key={id} id={id} className="h-10" />
           ))}
         </div>
         <h2 className="mb-2 text-2xl font-bold">
