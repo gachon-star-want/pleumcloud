@@ -284,3 +284,28 @@ func (c *connector) Validate(cb credBundle) error {
 	}
 	return nil
 }
+
+// init preset WebDAV services as their own catalog entries: same connector,
+// provider-specific metadata so the UI shows the right brand.
+func initPreset(id, name, docs string, freeGB int) {
+	provider.RegisterFactory(id, func(deps provider.Deps) provider.Connector {
+		return &preset{connector: connector{secrets: deps.Secrets}, id: id, name: name, docs: docs, freeGB: freeGB}
+	})
+}
+
+type preset struct {
+	connector
+	id, name, docs string
+	freeGB         int
+}
+
+func (p *preset) Metadata() provider.Metadata {
+	return provider.Metadata{
+		ID: p.id, Name: p.name, AuthKind: provider.AuthWebDAV,
+		Tier: provider.TierNative, FreeTierGB: p.freeGB, DocsURL: p.docs,
+	}
+}
+
+func init() {
+	initPreset("infinicloud", "InfiniCLOUD", "https://infini-cloud.net/en/developer_api.html", 20)
+}
