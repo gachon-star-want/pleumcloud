@@ -5,12 +5,51 @@
 <h3 align="center">All your free cloud storage, one drive.</h3>
 
 <p align="center">
-  <a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/v/release/gachon-star-want/pleumcloud?style=flat-square&logo=github&color=%232563eb" alt="Release"></a>
-  <a href="https://github.com/gachon-star-want/pleumcloud/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gachon-star-want/pleumcloud/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white" alt="CI"></a>
-  <a href="https://goreportcard.com/report/github.com/gachon-star-want/pleumcloud"><img src="https://goreportcard.com/badge/github.com/gachon-star-want/pleumcloud?style=flat-square" alt="Go Report"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" alt="License: AGPL-3.0"></a>
-  <a href="#"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square&logo=windows" alt="Platforms"></a>
-  <a href="https://github.com/gachon-star-want/pleumcloud/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs welcome"></a>
+
+<!-- ── Status & Release ────────────────────────────────────────────── -->
+<a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/v/release/gachon-star-want/pleumcloud?style=flat-square&logo=github&color=%232563eb&label=release" alt="Latest release"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/release-date/gachon-star-want/pleumcloud?style=flat-square&color=%232563eb" alt="Release date"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/commits/main"><img src="https://img.shields.io/github/commits-since/gachon-star-want/pleumcloud/latest?style=flat-square&color=%231e9acd&label=commits%20since%20release" alt="Commits since release"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/downloads/gachon-star-want/pleumcloud/total?style=flat-square&color=%2310938d&label=downloads" alt="Downloads"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gachon-star-want/pleumcloud/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+<a href="https://semver.org"><img src="https://img.shields.io/badge/versioning-SemVer-3f4551?style=flat-square&logo=semver&logoColor=white" alt="SemVer"></a>
+<br>
+
+<!-- ── Quality & Community ──────────────────────────────────────────── -->
+<a href="https://goreportcard.com/report/github.com/gachon-star-want/pleumcloud"><img src="https://goreportcard.com/badge/github.com/gachon-star-want/pleumcloud?style=flat-square" alt="Go Report"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square&logo=gnu&logoColor=white" alt="License: AGPL-3.0"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/issues"><img src="https://img.shields.io/github/issues/gachon-star-want/pleumcloud?style=flat-square&color=%23e8a33d&label=issues" alt="Issues"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/pulls"><img src="https://img.shields.io/github/issues-pr/gachon-star-want/pleumcloud?style=flat-square&color=%23a873d6&label=PRs%20open"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square&logo=github" alt="PRs welcome"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/graphs/contributors"><img src="https://img.shields.io/github/contributors/gachon-star-want/pleumcloud?style=flat-square&color=%234c1" alt="Contributors"></a>
+<br>
+
+<!-- ── Stack (versions from go.mod / package.json) ─────────────────── -->
+<a href="https://go.dev"><img src="https://img.shields.io/github/go-mod/go-version/gachon-star-want/pleumcloud?style=flat-square&logo=go&logoColor=white&label=Go" alt="Go version"></a>
+<a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19"></a>
+<a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"></a>
+<a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4"></a>
+<a href="https://sqlite.org"><img src="https://img.shields.io/badge/SQLite-pure--Go%20%7C%20FTS5-0064A5?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite"></a>
+<a href="https://go-chi.io"><img src="https://img.shields.io/badge/router-chi%20v5-00ADD8?style=flat-square" alt="chi router"></a>
+<a href="https://oauth.net/2/"><img src="https://img.shields.io/badge/auth-OAuth%202.0%20%2B%20PKCE-2C2D72?style=flat-square" alt="OAuth 2.0"></a>
+<a href="https://rclone.org"><img src="https://img.shields.io/badge/bridge-rclone%20%2B8%20clouds-0055A5?style=flat-square" alt="rclone bridge"></a>
+<br>
+
+<!-- ── Repository metrics ───────────────────────────────────────────── -->
+<a href="https://github.com/gachon-star-want/pleumcloud/search?l=go"><img src="https://img.shields.io/github/languages/top/gachon-star-want/pleumcloud?style=flat-square&color=%2300ADD8" alt="Top language"></a>
+<a href="#"><img src="https://img.shields.io/github/languages/code-size/gachon-star-want/pleumcloud?style=flat-square&color=%2390a959" alt="Code size"></a>
+<a href="#"><img src="https://img.shields.io/github/repo-size/gachon-star-want/pleumcloud?style=flat-square&color=%2390a959" alt="Repo size"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/commits/main"><img src="https://img.shields.io/github/last-commit/gachon-star-want/pleumcloud?style=flat-square&color=%236a9fb5&label=last%20commit" alt="Last commit"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/commits/main"><img src="https://img.shields.io/github/commit-activity/m/gachon-star-want/pleumcloud?style=flat-square&color=%236a9fb5" alt="Commit activity"></a>
+<a href="#"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square&logo=windows&logoColor=white" alt="Platforms"></a>
+<a href="#"><img src="https://img.shields.io/badge/code%20style-gofmt-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Code style: gofmt"></a>
+<br>
+
+<!-- ── Social ───────────────────────────────────────────────────────── -->
+<a href="https://github.com/gachon-star-want/pleumcloud/stargazers"><img src="https://img.shields.io/github/stars/gachon-star-want/pleumcloud?style=social" alt="Stars"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/network/members"><img src="https://img.shields.io/github/forks/gachon-star-want/pleumcloud?style=social" alt="Forks"></a>
+<a href="https://github.com/gachon-star-want/pleumcloud/watchers"><img src="https://img.shields.io/github/watchers/gachon-star-want/pleumcloud?style=social" alt="Watch"></a>
+
 </p>
 
 <p align="center"><b>
