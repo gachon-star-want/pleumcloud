@@ -18,8 +18,10 @@ import (
 	"github.com/pleumcloud/pleumcloud/internal/store"
 
 	// Connectors self-register into the provider registry.
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/dropbox"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/mybox"
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/onedrive"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/webdav"
 )
 
