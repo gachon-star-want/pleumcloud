@@ -27,6 +27,11 @@ var Catalog = []Metadata{
 	// Experimental tier — served through the rclone sidecar bridge (M2+).
 	{ID: "mega", Name: "MEGA", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 20},
 	{ID: "box", Name: "Box", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 10},
+	{ID: "mediafire", Name: "MediaFire", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 10,
+		DocsURL: "https://www.mediafire.com/developers/",
+		// 10 GB base, expandable to ~50 GB via bonuses; official REST API
+		// with app registration. Added after the namu.wiki list review (2026-08).
+		},
 	{ID: "yandex", Name: "Yandex Disk", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 5},
 	{ID: "hidrive", Name: "STRATO HiDrive", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 0},
 	{ID: "jottacloud", Name: "Jottacloud", AuthKind: AuthBridge, Tier: TierExperimental, FreeTierGB: 5},

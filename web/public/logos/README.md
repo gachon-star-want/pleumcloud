@@ -7,7 +7,7 @@ identify their services (nominative use). Sources:
 |---|---|
 | gdrive, onedrive, dropbox, yandex, protondrive | Wikimedia Commons (official brand SVGs) |
 | mybox | Naver logo initial (Wikimedia Commons), recolored to Naver green #03c75a |
-| mega, box | Simple Icons v13 (CC0), brand color applied |
+| mega, box, mediafire | Simple Icons v13 (CC0), brand color applied |
 | pcloud, internxt, jottacloud, infinicloud | Official websites |
 | drime, koofr, hidrive, filen, webdav | Placeholder tiles in brand colors — these services publish no open SVG logo. To be replaced with official assets when available. |
 

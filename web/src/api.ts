@@ -52,6 +52,7 @@ export const providerColor: Record<string, string> = {
   infinicloud: "#14b8a6",
   mega: "#d9272e",
   box: "#0061d5",
+  mediafire: "#1299f3",
   yandex: "#fc3f1d",
   hidrive: "#0f766e",
   jottacloud: "#2dd4bf",
