@@ -1,10 +1,12 @@
 interface TopBarProps {
   view: "drive" | "connect";
+  query: string;
+  onQuery: (q: string) => void;
   onHome: () => void;
   onConnect: () => void;
 }
 
-export default function TopBar({ view, onHome, onConnect }: TopBarProps) {
+export default function TopBar({ view, query, onQuery, onHome, onConnect }: TopBarProps) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
       {view !== "drive" && (
@@ -25,11 +27,11 @@ export default function TopBar({ view, onHome, onConnect }: TopBarProps) {
       <div className="mx-auto w-full max-w-xl min-w-0">
         <input
           type="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
           placeholder="Search across all your clouds…"
-          disabled
-          aria-disabled="true"
-          title="Search arrives with the unified index (M4)"
-          className="w-full cursor-not-allowed rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-400 placeholder:text-slate-400 focus:outline-none"
+          aria-label="Search files"
+          className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none"
         />
       </div>
       <button
@@ -38,9 +40,6 @@ export default function TopBar({ view, onHome, onConnect }: TopBarProps) {
       >
         +
       </button>
-      <span className="hidden shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 sm:inline-flex">
-        M1 preview
-      </span>
     </header>
   );
 }

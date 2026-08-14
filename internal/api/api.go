@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/pleumcloud/pleumcloud/internal/index"
 	"github.com/pleumcloud/pleumcloud/internal/oauthflow"
 	"github.com/pleumcloud/pleumcloud/internal/provider"
 	"github.com/pleumcloud/pleumcloud/internal/secret"
@@ -23,12 +24,13 @@ type API struct {
 	store   *store.Store
 	secrets secret.Store
 	oauth   *oauthflow.Manager
+	indexer *index.Indexer
 	version string
 }
 
 // New wires the API handlers.
-func New(st *store.Store, secrets secret.Store, oauth *oauthflow.Manager, version string) *API {
-	return &API{store: st, secrets: secrets, oauth: oauth, version: version}
+func New(st *store.Store, secrets secret.Store, oauth *oauthflow.Manager, idx *index.Indexer, version string) *API {
+	return &API{store: st, secrets: secrets, oauth: oauth, indexer: idx, version: version}
 }
 
 // LoadBYOCredentials reads stored BYO OAuth clients into the flow manager
@@ -66,6 +68,9 @@ func (a *API) Routes() chi.Router {
 
 	r.Get("/connect/{provider}/start", a.connectStart)
 	r.Get("/connect/{provider}/callback", a.connectCallback)
+
+	// Unified file operations (browsing, transfer, placement, rules).
+	a.registerFileRoutes(r)
 	return r
 }
 

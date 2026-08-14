@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — PleumCloud</title>
+<style>
+  body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1.25rem; line-height: 1.65; color: #0f172a; }
+  h1 { font-size: 1.6rem; }
+  code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 0.35rem; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<h1>PleumCloud — Privacy Policy</h1>
+<p><em>PleumCloud is local-first software. This policy describes what the
+application running on <strong>your</strong> machine does with data.</p></em>
+
+<h2>What we collect</h2>
+<p>Nothing. PleumCloud runs on your computer and has no telemetry,
+analytics, crash reporting or accounts of its own. The developers of
+PleumCloud never see your files, credentials, or usage.</p>
+
+<h2>What is stored on your machine</h2>
+<ul>
+  <li><strong>Cloud account tokens</strong> — in your OS keychain (macOS
+  Keychain, Windows Credential Manager, libsecret on Linux; a
+  permission-restricted file on headless systems).</li>
+  <li><strong>A file index</strong> (names, sizes, modification dates) in a
+  local SQLite database under <code>~/.pleumcloud/</code> so browsing and
+  search work instantly.</li>
+</ul>
+
+<h2>What leaves your machine</h2>
+<p>Only traffic that is required to operate the cloud accounts <em>you</em>
+connect: authentication, file listings, and file transfers between your
+machine and those providers (or between providers, when you request a
+cross-cloud transfer). Each provider's own privacy policy applies to data
+they store.</p>
+
+<h2>OAuth permissions</h2>
+<p>When you connect a cloud, its provider shows exactly which permissions
+are requested (for example, Google's Drive scope). PleumCloud requests the
+minimum needed to list, transfer and manage the files you direct it to,
+and never requests credentials for other services.</p>
+
+<h2>Self-hosted server mode</h2>
+<p>If you run PleumCloud in server mode for multiple users, you are the
+data controller: the same local-storage guarantees apply on that server,
+and no data is forwarded anywhere else.</p>
+
+<h2>Contact</h2>
+<p>Open an issue at the project repository for any privacy question.</p>
+</body>
+</html>

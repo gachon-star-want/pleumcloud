@@ -23,14 +23,29 @@ Then open `http://localhost:7777`.
 
 *Currently in early development — installer URL will go live with the first release. See [Roadmap](#roadmap).*
 
+## Status (2026-08)
+
+**M1–M4 core shipped** — 17 providers, unified drive, working end to end:
+
+- **9 native connectors** (TDD, docs-pinned): Google Drive, OneDrive,
+  Dropbox, Naver MyBox, Drime, pCloud, Koofr, WebDAV (incl. InfiniCLOUD)
+- **8 experimental** via the rclone bridge: MEGA, Box, Yandex, HiDrive,
+  Jottacloud, Filen, Internxt, Proton Drive
+- Unified browsing with per-file cloud badges, cross-cloud FTS search,
+  live quota dashboard, uploads with smart placement (+user rules),
+  streaming downloads, share links, background cross-cloud transfers
+- Secrets in the OS keychain; local SQLite index
+
+See [docs/provider-decisions.md](docs/provider-decisions.md) for who is
+supported and why, and [docs/oauth-setup.md](docs/oauth-setup.md) to set
+up one-click OAuth (paste your app keys once).
+
 ## Roadmap
 
-- **M1** Skeleton: binary + embedded UI + database ✅ *(in progress)*
-- **M2** Provider core: OAuth loopback flow + native connectors (Google Drive, OneDrive, Dropbox, pCloud, Koofr, MyBox, Drime, WebDAV) + experimental rclone bridge
-- **M3** File management: browsing UI, uploads with auto-placement, quota dashboard
-- **M4** Unified experience: rules engine, cross-cloud transfer queue, search, thumbnails, streaming, sharing
-- **M5** Release: multi-OS binaries, Homebrew/Scoop, docs
-- **Post-MVP** Ubuntu server mode (self-hosted multi-device), WebDAV mount, provider promotions
+- **M5** Release: multi-OS binaries, Homebrew/Scoop, docs site
+- **Post-MVP** Ubuntu server mode (self-hosted multi-device, cloud.pleum.ai),
+  WebDAV mount, thumbnails/streaming polish, provider promotions from the
+  rclone bridge to native, mobile push
 
 ## Development
 

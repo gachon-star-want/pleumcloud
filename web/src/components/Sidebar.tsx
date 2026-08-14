@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, providerDot, type ProviderMeta } from "../api";
+import { api, filesApi, fmtBytes, providerDot, type ProviderMeta } from "../api";
 import ProviderLogo from "./ProviderLogo";
 
 interface SidebarProps {
@@ -101,20 +101,50 @@ function NavButton({
 }
 
 function QuotaRibbon({ providers }: { providers: ProviderMeta[] }) {
-  // Placeholder until real quota data arrives with the first connector (M3).
+  const usage = useQuery({ queryKey: ["usage"], queryFn: filesApi.usage, refetchInterval: 60_000 });
+  const entries = usage.data?.usage ?? [];
+  if (entries.length === 0) {
+    return (
+      <div className="border-t border-slate-200 p-4">
+        <p className="mb-1.5 text-xs text-slate-500">Usage appears once you connect clouds.</p>
+        <div className="flex gap-1">
+          {providers.slice(0, 8).map((p) => (
+            <span
+              key={p.id}
+              className="h-1.5 flex-1 rounded-full"
+              style={{ background: providerDot(p.id), opacity: 0.35 }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  const totUsed = entries.reduce((s, e) => s + e.usedBytes, 0);
+  const totAll = entries.reduce((s, e) => s + e.totalBytes, 0);
   return (
     <div className="border-t border-slate-200 p-4">
-      <p className="mb-1.5 text-xs text-slate-500">
-        Usage appears once you connect clouds.
-      </p>
-      <div className="flex gap-1">
-        {providers.slice(0, 8).map((p) => (
-          <span
-            key={p.id}
-            className="h-1.5 flex-1 rounded-full"
-            style={{ background: providerDot(p.id), opacity: 0.35 }}
-          />
-        ))}
+      <div className="mb-1.5 flex justify-between text-xs text-slate-500">
+        <span className="font-semibold text-slate-700">{fmtBytes(totUsed)} used</span>
+        <span>of {fmtBytes(totAll)}</span>
+      </div>
+      <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-slate-100">
+        {entries.map((e) => {
+          const w = totAll > 0 ? (e.totalBytes / totAll) * 100 : 0;
+          const fill = e.totalBytes > 0 ? (e.usedBytes / e.totalBytes) * 100 : 0;
+          return (
+            <span
+              key={e.accountId}
+              className="relative h-full overflow-hidden rounded-full"
+              style={{ width: `${w}%`, background: providerDot(e.providerId), opacity: 0.25 }}
+              title={`${e.providerId}`}
+            >
+              <span
+                className="absolute inset-y-0 left-0"
+                style={{ width: `${fill}%`, background: providerDot(e.providerId), opacity: 1 }}
+              />
+            </span>
+          );
+        })}
       </div>
     </div>
   );

@@ -124,7 +124,7 @@ func (e *runError) Error() string {
 }
 
 func (c *connector) execRclone(ctx context.Context, args ...string) ([]byte, error) {
-	full := append([]string{"--config", c.confPath, "--quiet"}, args...)
+	full := append(append([]string{}, "--config", c.confPath, "--quiet"), args...)
 	cmd := exec.CommandContext(ctx, "rclone", full...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -252,7 +252,7 @@ func (c *connector) Upload(ctx context.Context, acct provider.AccountRef, parent
 	if parentRemoteID != "" {
 		dst = parentRemoteID + "/" + name
 	}
-	full := append([]string{"--config", c.confPath, "--quiet", "rcat", rpath(cb.Remote, dst)})
+	full := append([]string{}, "--config", c.confPath, "--quiet", "rcat", rpath(cb.Remote, dst))
 	cmd := exec.CommandContext(ctx, "rclone", full...)
 	cmd.Stdin = r
 	var stderr bytes.Buffer
@@ -272,7 +272,7 @@ func (c *connector) Open(ctx context.Context, acct provider.AccountRef, remoteID
 	if err != nil {
 		return nil, err
 	}
-	full := append([]string{"--config", c.confPath, "--quiet", "cat", rpath(cb.Remote, remoteID)})
+	full := append([]string{}, "--config", c.confPath, "--quiet", "cat", rpath(cb.Remote, remoteID))
 	cmd := exec.CommandContext(ctx, "rclone", full...)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
