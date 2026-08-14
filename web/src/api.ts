@@ -61,9 +61,9 @@ export const api = {
   accounts: () => get<{ accounts: Account[] }>("/api/accounts"),
   credentials: () => get<{ credentials: Credential[] }>("/api/credentials"),
 
-  connectPAT: (providerId: string, token: string, label?: string) =>
+  connectPAT: (providerId: string, token: string, label?: string, username?: string) =>
     send<{ id: string; label: string }>("/api/accounts", "POST", {
-      providerId, method: "pat", token, label,
+      providerId, method: "pat", token, label, username,
     }),
 
   connectWebDAV: (url: string, username: string, password: string, label?: string) =>

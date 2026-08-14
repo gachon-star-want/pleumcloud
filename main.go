@@ -22,6 +22,7 @@ import (
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/drime"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/dropbox"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/koofr"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/mybox"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/onedrive"
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/pcloud"

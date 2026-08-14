@@ -225,10 +225,12 @@ function PATDialog({
   onClose: () => void;
 }) {
   const [token, setToken] = useState("");
+  const [email, setEmail] = useState("");
+  const needsEmail = provider.id === "koofr";
   const [error, setError] = useState<string | null>(null);
   const qc = useQueryClient();
   const mutation = useMutation({
-    mutationFn: () => api.connectPAT(provider.id, token.trim()),
+    mutationFn: () => api.connectPAT(provider.id, token.trim(), undefined, needsEmail ? email.trim() : undefined),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["accounts"] });
       onClose();
@@ -252,17 +254,27 @@ function PATDialog({
             </a>
           )}
         </p>
+        {needsEmail && (
+          <Field
+            label="Koofr account email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoFocus
+          />
+        )}
         <Field
-          label="Access token"
+          label="API token"
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          placeholder="mbx_pat_…"
-          autoFocus
+          placeholder={needsEmail ? "Settings → API tokens" : "mbx_pat_…"}
+          autoFocus={!needsEmail}
         />
         <ErrBanner error={error} />
         <button
-          disabled={token.trim() === "" || mutation.isPending}
+          disabled={token.trim() === "" || (needsEmail && email.trim() === "") || mutation.isPending}
           onClick={() => mutation.mutate()}
           className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
         >

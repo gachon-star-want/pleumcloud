@@ -148,7 +148,7 @@ func (a *API) createAccount(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, errors.New("token is required"))
 			return
 		}
-		if err := secret.PutJSON(a.secrets, ref, map[string]string{"pat": req.Token}); err != nil {
+		if err := secret.PutJSON(a.secrets, ref, map[string]string{"pat": req.Token, "email": req.Username}); err != nil {
 			writeErr(w, http.StatusInternalServerError, err)
 			return
 		}
