@@ -16,6 +16,7 @@ import (
 	"github.com/pleumcloud/pleumcloud/internal/secret"
 	"github.com/pleumcloud/pleumcloud/internal/server"
 	"github.com/pleumcloud/pleumcloud/internal/store"
+	"github.com/pleumcloud/pleumcloud/internal/ui"
 
 	// Connectors self-register into the provider registry.
 	_ "github.com/pleumcloud/pleumcloud/internal/provider/drime"
@@ -71,26 +72,14 @@ func main() {
 	}
 
 	url := cfg.LocalURL()
-	fmt.Printf(`
-  ┌─────────────────────────────────────────────┐
-  │                                             │
-  │   PleumCloud — one drive for all your      │
-  │   free cloud storage                        │
-  │                                             │
-  │   version %-34s │
-  │                                             │
-  └─────────────────────────────────────────────┘
-
-  %s
-  Data directory: %s
-  Press Ctrl+C to stop.
-`, version, url, cfg.DataDir)
+	fmt.Print(ui.Banner(version, url, cfg.DataDir))
+	fmt.Println("  Press Ctrl+C to stop.")
 
 	// Open the default browser only after the listener is bound, so the
 	// page is guaranteed to load.
 	if !cfg.NoBrowser {
 		if err := browser.Open(url); err != nil {
-			fmt.Printf("  (couldn't open a browser: %v — open %s manually)\n", err, url)
+			fmt.Printf("  (couldn't open a browser: %v - open %s manually)\n", err, url)
 		}
 	}
 
