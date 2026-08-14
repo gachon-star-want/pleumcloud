@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, providerDot, type ProviderMeta } from "../api";
+import ProviderLogo from "./ProviderLogo";
 
 interface SidebarProps {
   connectedCount: number;
@@ -11,6 +12,10 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
     queryKey: ["providers"],
     queryFn: api.providers,
   });
+  const accounts = useQuery({ queryKey: ["accounts"], queryFn: api.accounts });
+  const qc = useQueryClient();
+  const meta = providers.data?.providers ?? [];
+  const connected = accounts.data?.accounts ?? [];
 
   return (
     <aside className="hidden w-72 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
@@ -30,11 +35,27 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
         Clouds ({connectedCount})
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        {connectedCount === 0 && (
-          <p className="px-2 py-1 text-sm text-slate-400">
-            No clouds connected yet.
-          </p>
-        )}
+        {connected.map((a) => (
+          <div
+            key={a.id}
+            className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-100"
+          >
+            <ProviderLogo id={a.providerId} className="size-6" />
+            <span className="min-w-0 flex-1 truncate text-sm text-slate-600">
+              {a.label}
+            </span>
+            <button
+              aria-label={`Disconnect ${a.label}`}
+              onClick={async () => {
+                await api.disconnect(a.id);
+                qc.invalidateQueries({ queryKey: ["accounts"] });
+              }}
+              className="hidden rounded px-1.5 text-xs text-slate-400 hover:text-red-600 group-hover:block"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
         <button
           onClick={onConnect}
           className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"
@@ -46,7 +67,7 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
         </button>
       </div>
 
-      <QuotaRibbon providers={providers.data?.providers ?? []} />
+      <QuotaRibbon providers={meta} />
     </aside>
   );
 }

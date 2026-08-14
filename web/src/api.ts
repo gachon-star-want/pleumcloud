@@ -11,6 +11,8 @@ export interface ProviderMeta {
   freeTierGB: number;
   docsUrl?: string;
   maxUploadBytes?: number;
+  /** A connector implementation is registered for this provider. */
+  supported?: boolean;
 }
 
 export interface Account {
@@ -27,16 +29,52 @@ export interface Health {
   time: string;
 }
 
+export interface Credential {
+  provider: string;
+  configured: boolean;
+  hasByo: boolean;
+  clientId?: string;
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(path);
   if (!res.ok) throw new Error(`${path}: ${res.status} ${res.statusText}`);
   return res.json() as Promise<T>;
 }
 
+async function send<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((data as { error?: string }).error ?? `${method} ${path}: ${res.status}`);
+  }
+  return data as T;
+}
+
 export const api = {
   health: () => get<Health>("/api/health"),
   providers: () => get<{ providers: ProviderMeta[] }>("/api/providers"),
   accounts: () => get<{ accounts: Account[] }>("/api/accounts"),
+  credentials: () => get<{ credentials: Credential[] }>("/api/credentials"),
+
+  connectPAT: (providerId: string, token: string, label?: string) =>
+    send<{ id: string; label: string }>("/api/accounts", "POST", {
+      providerId, method: "pat", token, label,
+    }),
+
+  connectWebDAV: (url: string, username: string, password: string, label?: string) =>
+    send<{ id: string; label: string }>("/api/accounts", "POST", {
+      providerId: "webdav", method: "webdav", url, username, password, label,
+    }),
+
+  disconnect: (id: string) => send<{ deleted: string }>(`/api/accounts/${id}`, "DELETE"),
+
+  saveCredentials: (provider: string, clientId: string, clientSecret: string) =>
+    send<{ status: string }>(`/api/credentials/${provider}`, "PUT", { clientId, clientSecret }),
 };
 
 /** Brand colors for provider badges. */

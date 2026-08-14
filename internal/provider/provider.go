@@ -11,8 +11,11 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
+
+	"github.com/pleumcloud/pleumcloud/internal/secret"
 )
 
 // AuthKind identifies how a provider authenticates.
@@ -45,6 +48,10 @@ type Metadata struct {
 	// (0 = unknown or unlimited).
 	MaxUploadBytes int64 `json:"maxUploadBytes,omitempty"`
 }
+
+// ErrUnsupported marks optional capabilities a provider lacks (e.g. share
+// links on MyBox, quota on plain WebDAV).
+var ErrUnsupported = errors.New("capability not supported by this provider")
 
 // File is a provider-agnostic file or folder entry.
 type File struct {
@@ -110,28 +117,35 @@ type Connector interface {
 // AccountRef identifies a connected account; credentials live in the secret
 // store and are looked up by SecretRef, never passed around in the clear.
 type AccountRef struct {
-	ID        string
+	ID         string
 	ProviderID string
-	SecretRef string
+	SecretRef  string
 }
 
-// registry holds every connector the binary knows about, keyed by provider ID.
-var registry = map[string]Connector{}
-
-// Register adds a connector; called from connector package init functions.
-func Register(c Connector) { registry[c.Metadata().ID] = c }
-
-// Get returns the connector for a provider ID.
-func Get(id string) (Connector, bool) {
-	c, ok := registry[id]
-	return c, ok
+// Deps are the shared dependencies connectors are built with.
+type Deps struct {
+	Secrets secret.Store
 }
 
-// All returns all registered connectors.
-func All() []Connector {
-	out := make([]Connector, 0, len(registry))
-	for _, c := range registry {
-		out = append(out, c)
+// Factory builds a connector wired with deps.
+type Factory func(Deps) Connector
+
+// factories holds connector builders keyed by provider ID; connector
+// packages register via RegisterFactory from init().
+var factories = map[string]Factory{}
+
+// RegisterFactory registers a connector builder for a provider ID.
+func RegisterFactory(id string, f Factory) { factories[id] = f }
+
+// Build constructs the connector for a provider ID.
+func Build(id string, deps Deps) (Connector, bool) {
+	f, ok := factories[id]
+	if !ok {
+		return nil, false
 	}
-	return out
+	return f(deps), true
 }
+
+// Supported reports whether a connector implementation is registered
+// (vs. catalog-only providers awaiting their bridge).
+func Supported(id string) bool { _, ok := factories[id]; return ok }

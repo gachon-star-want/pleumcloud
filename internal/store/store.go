@@ -3,6 +3,8 @@
 package store
 
 import (
+	crand "crypto/rand"
+	"encoding/hex"
 	"database/sql"
 	"fmt"
 	"time"
@@ -191,4 +193,86 @@ func (s *Store) ListAccounts() ([]Account, error) {
 		out = append(out, a)
 	}
 	return out, rows.Err()
+}
+
+// AccountRow is the full account record including secret location.
+type AccountRow struct {
+	Account
+	AuthKind  string
+	SecretRef string
+}
+
+// GetAccount returns one account by ID.
+func (s *Store) GetAccount(id string) (AccountRow, error) {
+	var row AccountRow
+	var created int64
+	var synced any
+	err := s.db.QueryRow(
+		`SELECT id, provider_id, label, created_at, last_synced_at, auth_kind, secret_ref
+		 FROM accounts WHERE id = ?`, id,
+	).Scan(&row.ID, &row.ProviderID, &row.Label, &created, &synced, &row.AuthKind, &row.SecretRef)
+	if err != nil {
+		return row, err
+	}
+	row.CreatedAt = time.Unix(created, 0).UTC()
+	if v, ok := synced.(int64); ok {
+		t := time.Unix(v, 0).UTC()
+		row.LastSyncedAt = &t
+	}
+	return row, nil
+}
+
+// AddAccountWithID records a connected account under a caller-chosen ID
+// (the API layer derives the secret ref from the same ID).
+func (s *Store) AddAccountWithID(id, providerID, label, authKind, secretRef string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO accounts (id, provider_id, label, auth_kind, secret_ref, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?)`,
+		id, providerID, label, authKind, secretRef, time.Now().Unix(),
+	)
+	return err
+}
+
+// DeleteAccount removes an account row (callers delete the secret too).
+func (s *Store) DeleteAccount(id string) error {
+	_, err := s.db.Exec(`DELETE FROM accounts WHERE id = ?`, id)
+	return err
+}
+
+// SetAccountLabel updates the display label.
+func (s *Store) SetAccountLabel(id, label string) error {
+	_, err := s.db.Exec(`UPDATE accounts SET label = ? WHERE id = ?`, label, id)
+	return err
+}
+
+// SetAccountSynced stamps the last successful sync time.
+func (s *Store) SetAccountSynced(id string) error {
+	_, err := s.db.Exec(`UPDATE accounts SET last_synced_at = ? WHERE id = ?`, time.Now().Unix(), id)
+	return err
+}
+
+// SaveMeta writes a key/value setting.
+func (s *Store) SaveMeta(key, value string) error {
+	_, err := s.db.Exec(`INSERT INTO meta (key, value) VALUES (?, ?)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, value)
+	return err
+}
+
+// LoadMeta reads a key/value setting; empty string when absent.
+func (s *Store) LoadMeta(key string) (string, error) {
+	var v string
+	err := s.db.QueryRow(`SELECT value FROM meta WHERE key = ?`, key).Scan(&v)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return v, err
+}
+
+// NewAccountID generates a random account ID.
+func NewAccountID() (string, error) {
+	b := make([]byte, 12)
+	if _, err := crand.Read(b); err != nil {
+		return "", fmt.Errorf("generate id: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }

@@ -15,7 +15,6 @@ import (
 
 	"github.com/pleumcloud/pleumcloud/internal/api"
 	"github.com/pleumcloud/pleumcloud/internal/config"
-	"github.com/pleumcloud/pleumcloud/internal/store"
 	web "github.com/pleumcloud/pleumcloud/web"
 )
 
@@ -27,10 +26,8 @@ type Server struct {
 
 // New builds the server. In dev the SPA assets come from web/dist (rebuilt
 // by `make build` or `cd web && npm run build`); releases embed the built
-// assets into the binary.
-func New(cfg *config.Config, st *store.Store, version string) *Server {
-	a := api.New(st, version)
-
+// assets into the binary. The API bundle must already be fully wired.
+func New(cfg *config.Config, a *api.API) *Server {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.RealIP)
 	r.Use(middleware.Logger, middleware.Recoverer)

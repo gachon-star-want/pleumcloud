@@ -9,10 +9,18 @@ import (
 	"net"
 	"os"
 
+	"github.com/pleumcloud/pleumcloud/internal/api"
 	"github.com/pleumcloud/pleumcloud/internal/browser"
 	"github.com/pleumcloud/pleumcloud/internal/config"
+	"github.com/pleumcloud/pleumcloud/internal/oauthflow"
+	"github.com/pleumcloud/pleumcloud/internal/secret"
 	"github.com/pleumcloud/pleumcloud/internal/server"
 	"github.com/pleumcloud/pleumcloud/internal/store"
+
+	// Connectors self-register into the provider registry.
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/mybox"
+	_ "github.com/pleumcloud/pleumcloud/internal/provider/webdav"
 )
 
 // version is set at build time via -ldflags "-X main.version=..."
@@ -41,7 +49,15 @@ func main() {
 	}
 	defer st.Close()
 
-	srv := server.New(cfg, st, version)
+	secrets := secret.New(cfg.DataDir)
+	oauth := oauthflow.NewManager(secrets)
+
+	a := api.New(st, secrets, oauth, version)
+	if err := a.LoadBYOCredentials(); err != nil {
+		log.Fatalf("load credentials: %v", err)
+	}
+
+	srv := server.New(cfg, a)
 	addr := cfg.BindAddr()
 
 	ln, err := net.Listen("tcp", addr)
