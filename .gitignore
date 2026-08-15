@@ -1,7 +1,7 @@
 # Binaries
 pleumcloud
 pleumcloud.exe
-dist/
+/dist/
 bin/
 
 # Go
@@ -21,6 +21,9 @@ web/tsconfig.tsbuildinfo
 *.sqlite-wal
 *.sqlite-shm
 data/
+
+# AI tool session files
+.zcode/
 
 # IDE / OS
 .DS_Store

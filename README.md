@@ -5,122 +5,57 @@
 <h3 align="center">All your free cloud storage, one drive.</h3>
 
 <p align="center">
-
-<!-- ── Status & Release ────────────────────────────────────────────── -->
-<a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/v/release/gachon-star-want/pleumcloud?style=flat-square&logo=github&color=%232563eb&label=release" alt="Latest release"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/release-date/gachon-star-want/pleumcloud?style=flat-square&color=%232563eb" alt="Release date"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/commits/main"><img src="https://img.shields.io/github/commits-since/gachon-star-want/pleumcloud/latest?style=flat-square&color=%231e9acd&label=commits%20since%20release" alt="Commits since release"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/releases"><img src="https://img.shields.io/github/downloads/gachon-star-want/pleumcloud/total?style=flat-square&color=%2310938d&label=downloads" alt="Downloads"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gachon-star-want/pleumcloud/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
-<a href="https://semver.org"><img src="https://img.shields.io/badge/versioning-SemVer-3f4551?style=flat-square&logo=semver&logoColor=white" alt="SemVer"></a>
-<br>
-
-<!-- ── Quality & Community ──────────────────────────────────────────── -->
-<a href="https://goreportcard.com/report/github.com/gachon-star-want/pleumcloud"><img src="https://goreportcard.com/badge/github.com/gachon-star-want/pleumcloud?style=flat-square" alt="Go Report"></a>
-<a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square&logo=gnu&logoColor=white" alt="License: AGPL-3.0"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/issues"><img src="https://img.shields.io/github/issues/gachon-star-want/pleumcloud?style=flat-square&color=%23e8a33d&label=issues" alt="Issues"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/pulls"><img src="https://img.shields.io/github/issues-pr/gachon-star-want/pleumcloud?style=flat-square&color=%23a873d6&label=PRs%20open"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/pulls"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square&logo=github" alt="PRs welcome"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/graphs/contributors"><img src="https://img.shields.io/github/contributors/gachon-star-want/pleumcloud?style=flat-square&color=%234c1" alt="Contributors"></a>
-<br>
-
-<!-- ── Stack (versions from go.mod / package.json) ─────────────────── -->
-<a href="https://go.dev"><img src="https://img.shields.io/github/go-mod/go-version/gachon-star-want/pleumcloud?style=flat-square&logo=go&logoColor=white&label=Go" alt="Go version"></a>
-<a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19"></a>
-<a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"></a>
-<a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4"></a>
-<a href="https://sqlite.org"><img src="https://img.shields.io/badge/SQLite-pure--Go%20%7C%20FTS5-0064A5?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite"></a>
-<a href="https://go-chi.io"><img src="https://img.shields.io/badge/router-chi%20v5-00ADD8?style=flat-square" alt="chi router"></a>
-<a href="https://oauth.net/2/"><img src="https://img.shields.io/badge/auth-OAuth%202.0%20%2B%20PKCE-2C2D72?style=flat-square" alt="OAuth 2.0"></a>
-<a href="https://rclone.org"><img src="https://img.shields.io/badge/bridge-rclone%20%2B8%20clouds-0055A5?style=flat-square" alt="rclone bridge"></a>
-<br>
-
-<!-- ── Repository metrics ───────────────────────────────────────────── -->
-<a href="https://github.com/gachon-star-want/pleumcloud/search?l=go"><img src="https://img.shields.io/github/languages/top/gachon-star-want/pleumcloud?style=flat-square&color=%2300ADD8" alt="Top language"></a>
-<a href="#"><img src="https://img.shields.io/github/languages/code-size/gachon-star-want/pleumcloud?style=flat-square&color=%2390a959" alt="Code size"></a>
-<a href="#"><img src="https://img.shields.io/github/repo-size/gachon-star-want/pleumcloud?style=flat-square&color=%2390a959" alt="Repo size"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/commits/main"><img src="https://img.shields.io/github/last-commit/gachon-star-want/pleumcloud?style=flat-square&color=%236a9fb5&label=last%20commit" alt="Last commit"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/commits/main"><img src="https://img.shields.io/github/commit-activity/m/gachon-star-want/pleumcloud?style=flat-square&color=%236a9fb5" alt="Commit activity"></a>
-<a href="#"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square&logo=windows&logoColor=white" alt="Platforms"></a>
-<a href="#"><img src="https://img.shields.io/badge/code%20style-gofmt-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Code style: gofmt"></a>
-<br>
-
-<!-- ── Social ───────────────────────────────────────────────────────── -->
-<a href="https://github.com/gachon-star-want/pleumcloud/stargazers"><img src="https://img.shields.io/github/stars/gachon-star-want/pleumcloud?style=social" alt="Stars"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/network/members"><img src="https://img.shields.io/github/forks/gachon-star-want/pleumcloud?style=social" alt="Forks"></a>
-<a href="https://github.com/gachon-star-want/pleumcloud/watchers"><img src="https://img.shields.io/github/watchers/gachon-star-want/pleumcloud?style=social" alt="Watch"></a>
-
+  <a href="https://github.com/gachon-star-want/pleumcloud/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/gachon-star-want/pleumcloud/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square&logo=gnu&logoColor=white" alt="License: AGPL-3.0"></a>
 </p>
-
-<p align="center"><b>
-  <a href="#install">Install</a> ·
-  <a href="#the-problem">Why</a> ·
-  <a href="#supported-clouds">Clouds</a> ·
-  <a href="#how-it-works">How it works</a> ·
-  <a href="docs/oauth-setup.md">OAuth setup</a> ·
-  <a href="#contributing">Contribute</a>
-</b></p>
 
 <p align="center">
   🌍 Read this in:
   <a href="readme/README.ko.md">한국어</a> ·
   <a href="readme/README.ja.md">日本語</a> ·
-  <a href="readme/README.zh.md">简体中文</a> ·
+  <a href="readme/README.zh-CN.md">简体中文</a> ·
+  <a href="readme/README.zh-TW.md">繁體中文</a> ·
   <a href="readme/README.es.md">Español</a> ·
   <a href="readme/README.fr.md">Français</a> ·
   <a href="readme/README.de.md">Deutsch</a> ·
-  <a href="readme/README.pt-BR.md">Português</a> ·
-  <a href="readme/README.ru.md">Русский</a> ·
-  <a href="readme/README.hi.md">हिन्दी</a> ·
-  <a href="readme/README.id.md">Indonesia</a> ·
-  <a href="readme/README.it.md">Italiano</a> ·
-  <a href="readme/README.vi.md">Tiếng Việt</a>
+  <a href="readme/README.pt-BR.md">Português (Brasil)</a>
 </p>
 
 ---
 
-## The problem
+PleumCloud is a local-first app that turns your scattered free cloud storage —
+15 GB from Google, 30 GB from Naver MyBox, 5 GB from OneDrive, 20 GB from
+Drime, 10 GB from pCloud… over 100 GB across six apps — into **one drive**.
+Connect your accounts once, then browse, search, upload and move files as if
+they all lived on a single disk. Every file carries a badge showing which
+cloud it lives on.
 
-You already have **plenty of free cloud storage** — 15 GB from Google, 30 GB
-from Naver MyBox, 5 GB from OneDrive, 20 GB from Drime, 10 GB from pCloud,
-20 GB from InfiniCLOUD… over **100 GB, scattered across six apps**, each
-with its own login, its own upload button, and its own idea of "search".
+Files are never re-hosted: each file lives whole on one cloud, and PleumCloud
+keeps only a local index plus your credentials in the OS keychain. It ships
+as a single ~18 MB binary with the UI embedded.
 
-PleumCloud turns that pile into **one drive**. Connect your accounts once,
-then browse, search, upload and move files as if they all lived on a single
-disk — every file carries a badge showing which cloud it lives on.
-
-> Born in August 2026, the week Naver finally opened the
-> [MyBox Open API](https://developers.mybox.naver.com) after 13 years —
-> the last big Korean cloud had no reason left to stay closed, and free
-> storage everywhere finally had a reason to work together.
-
-## ✨ Features
+## Features
 
 - 🔗 **One-click connect** — official OAuth for Google Drive, OneDrive,
-  Dropbox and pCloud; access tokens for Naver MyBox, Drime and Koofr;
-  WebDAV for everything else. Credentials live in your OS keychain.
-- 🗂️ **One unified drive** — browse all clouds in a single view with
-  per-file cloud badges, breadcrumbs and a live per-cloud quota dashboard.
-- 🔍 **Instant search everywhere** — one keystroke searches every
-  connected account through a local full-text index.
-- 🧠 **Smart placement** — uploads automatically go wherever you have the
-  most free space. Override per upload, or set rules
-  (*"videos → Google, PDFs → MyBox, anything over 1 GB → pCloud"*).
+  Dropbox and pCloud; access tokens for Naver MyBox, Drime, Koofr and
+  MediaFire; WebDAV for everything else. Credentials live in your OS keychain.
+- 🗂️ **One unified drive** — browse all clouds in a single view with per-file
+  cloud badges, breadcrumbs and a live per-cloud quota dashboard.
+- 🔍 **Instant search everywhere** — one keystroke searches every connected
+  account through a local full-text index (SQLite FTS5).
+- 🧠 **Smart placement** — uploads go wherever you have the most free space.
+  Override per upload, or set rules (*"videos → Google, PDFs → MyBox,
+  anything over 1 GB → pCloud"*) in the rules editor.
 - 🚚 **Cross-cloud transfers** — copy or move files between clouds as
   background jobs that stream through your machine. Close the tab; the
   transfer keeps going.
-- 🔗 **Share links, downloads, rename/move/copy/delete** — the everyday
-  file ops, from one place.
-- 👁 **Previews & streaming** — click a file for full preview: images,
-  seekable video (native byte-range), audio, PDF. Gallery grid view with
-  locally generated thumbnails that work on every provider.
-- 📏 **Rules editor** — manage upload rules in the UI (priority order,
-  first match wins; no match → most free space).
-- 🖥️ **Local-first** — a single ~18 MB binary with the UI embedded. No
-  account, no telemetry. Need remote access? `PLEUMCLOUD_SERVER=1
-  PLEUMCLOUD_PASSWORD=… pleumcloud` guards it with Basic auth (pair with
-  HTTPS on a NAS/VPS).
+- 👁 **Previews & streaming** — images, seekable video, audio and PDF
+  previews, plus a gallery grid view with locally generated thumbnails.
+- 🔗 **Share links, downloads, rename/move/copy/delete** — the everyday file
+  ops, from one place.
+- 🖥️ **Local-first** — single binary, no account, no telemetry. Need remote
+  access? `PLEUMCLOUD_SERVER=1 PLEUMCLOUD_PASSWORD=… pleumcloud` guards it
+  with Basic auth (pair with HTTPS on a NAS/VPS).
 - 🧩 **18 providers** — 10 hand-built native connectors plus 8 more through
   the rclone bridge, all behind one interface.
 
@@ -139,10 +74,10 @@ disk — every file carries a badge showing which cloud it lives on.
 | InfiniCLOUD | 20 GB | URL + login | ✅ Native |
 | MediaFire | 10 GB | App credentials | ✅ Native |
 | MEGA · Box · Yandex Disk · HiDrive · Jottacloud · Filen · Internxt · Proton Drive | 5–20 GB | [rclone](https://rclone.org) bridge | 🧪 Experimental |
-| iCloud Drive · Samsung Cloud · TeraBox · Sync.com | — | — | ❌ No official API — see [why](docs/provider-decisions.md) |
+| iCloud Drive · Samsung Cloud · TeraBox · Sync.com | — | — | ❌ No official API — see [why](docs/decisions.md) |
 
-The full matrix, including every service we evaluated and rejected, lives
-in [docs/provider-decisions.md](docs/provider-decisions.md).
+The full matrix of every service we evaluated, and the reasoning behind all
+major design decisions, lives in [docs/decisions.md](docs/decisions.md).
 
 ## Install
 
@@ -177,7 +112,7 @@ machine) — after that every connect is a single click.
  You ──▶│  │  Web UI  │  │ Indexer │  │  Placement  │  │
         │  └────┬─────┘  └────┬────┘  └──────┬──────┘  │
         │  ┌────┴────────────┴───────────────┴──────┐  │
-        │  │        provider connectors × 17        │  │
+        │        provider connectors × 18           │  │
         │  └───┬──────┬──────┬──────┬──────┬───────┘  │
         └──────┼──────┼──────┼──────┼──────┼───────────┘
                ▼      ▼      ▼      ▼      ▼
@@ -185,60 +120,40 @@ machine) — after that every connect is a single click.
            (files stay on YOUR clouds — PleumCloud is the control plane)
 ```
 
-Files are never re-hosted: each file lives whole on one cloud, and
-PleumCloud keeps only a local index (names, sizes, dates) plus your
-credentials in the OS keychain. Cross-cloud transfers stream
-source → your machine → destination using each provider's resumable
-upload protocol.
+PleumCloud is the control plane, not a host. The indexer keeps a local
+SQLite/FTS5 catalog of names, sizes and dates (synced incrementally via each
+provider's change feed), the placement engine decides where new files go,
+and cross-cloud transfers stream source → your machine → destination using
+each provider's resumable upload protocol.
 
-## Why not…?
+## Development
 
-- **MultCloud / cloudHQ** — closed SaaS; your cloud tokens live on their
-  servers, and the free tier is ad-limited. PleumCloud is open source and
-  runs on *your* machine.
-- **rclone alone** — brilliant CLI, but no unified UI, no unified search
-  index, no placement rules. (We love it so much we embed it as the
-  bridge for long-tail providers.)
-- **iCloud / Samsung Cloud** — no official third-party API exists;
-  reverse-engineering them risks your accounts, so we don't.
+Requires Go 1.26+ and Node 20+.
 
-## Roadmap
+```bash
+make dev    # go run + Vite dev server (hot reload)
+make build  # frontend bundle → embedded Go binary
+make test   # go test ./...
+```
 
-- [x] M1 — single binary + embedded UI
-- [x] M2 — 9 native connectors + rclone bridge (OAuth, keychain, TDD)
-- [x] M3 — unified browsing, search, quota dashboard
-- [x] M4 — smart placement + rules, cross-cloud transfer queue, sharing
-- [x] M5 — thumbnails & gallery, previews/streaming, rules editor UI
-- [x] Remote-access server mode (Basic auth; pair with your HTTPS reverse proxy)
-- [ ] Docker images, NAS one-clicks, hosted service for everyone else
+The backend lives in `internal/` (api, provider, index, placement, …) and
+the React app in `web/`.
 
 ## Contributing
 
-Issues and PRs are welcome — including **new connectors** (each one lives
-in `internal/provider/<name>/` behind a single interface with mock tests),
-UI polish, docs and translations. See
-[CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+Issues and PRs are welcome — including **new connectors**, UI polish, docs
+and translations. Each connector lives in `internal/provider/<name>/` behind
+a single interface with mock tests; start with
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Privacy
 
 No telemetry, no analytics, no accounts. Tokens stay in your OS keychain;
-the index stays in `~/.pleumcloud/`. Details: [privacy policy](/privacy).
+the index stays in `~/.pleumcloud/`. Details:
+[privacy policy](web/public/privacy.html).
 
 ## License
 
-PleumCloud is free software under the **GNU AGPL-3.0** — you can use,
-study, modify and self-host it freely. If you offer it as a network
-service, you must share your modifications under the same license.
-
-## Acknowledgments
-
-- [rclone](https://rclone.org) — the bridge for long-tail providers, and a
-  constant source of protocol wisdom.
-- [go-koofrclient](https://github.com/koofr/go-koofrclient) and the
-  Naver MyBox team — reference implementations we pinned our connectors
-  against.
-- Every cloud provider that chose to open an API.
-
----
-
-<p align="center">☁️ <i>Built by <a href="https://github.com/gachon-star-want">Discover_it</a> and contributors — because 100 GB of free storage deserves one home.</i></p>
+PleumCloud is free software under the **GNU AGPL-3.0** — use, study, modify
+and self-host it freely. If you offer it as a network service, you must
+share your modifications under the same license.
