@@ -416,3 +416,29 @@ func (c *connector) ShareLink(ctx context.Context, acct provider.AccountRef, rem
 	}
 	return out.URL, nil
 }
+
+// OpenRange serves a byte range natively via the Range header on
+// files/download (the official ranged variant).
+func (c *connector) OpenRange(ctx context.Context, acct provider.AccountRef, remoteID string, start, length int64) (io.ReadCloser, error) {
+	hc, err := c.client(ctx, acct)
+	if err != nil {
+		return nil, err
+	}
+	arg, _ := json.Marshal(map[string]any{"path": idToPath(remoteID)})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, contentBase+"/2/files/download", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Dropbox-API-Arg", string(arg))
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, start+length-1))
+	resp, err := hc.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		resp.Body.Close()
+		return nil, &dbxError{Status: resp.StatusCode, Msg: string(body)}
+	}
+	return resp.Body, nil
+}

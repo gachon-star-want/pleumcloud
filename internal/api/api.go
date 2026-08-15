@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -21,17 +22,21 @@ import (
 
 // API bundles handler dependencies.
 type API struct {
-	store   *store.Store
-	secrets secret.Store
-	oauth   *oauthflow.Manager
-	indexer *index.Indexer
-	version string
+	store    *store.Store
+	secrets  secret.Store
+	oauth    *oauthflow.Manager
+	indexer  *index.Indexer
+	thumbDir string
+	version  string
 }
 
 // New wires the API handlers.
 func New(st *store.Store, secrets secret.Store, oauth *oauthflow.Manager, idx *index.Indexer, version string) *API {
 	return &API{store: st, secrets: secrets, oauth: oauth, indexer: idx, version: version}
 }
+
+// SetDataDir points the thumbnail cache at the data directory.
+func (a *API) SetDataDir(dir string) { a.thumbDir = filepath.Join(dir, "thumbs") }
 
 // LoadBYOCredentials reads stored BYO OAuth clients into the flow manager
 // (called once at startup).

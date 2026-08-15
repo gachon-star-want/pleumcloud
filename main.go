@@ -66,6 +66,7 @@ func main() {
 	idx := index.New(st)
 
 	a := api.New(st, secrets, oauth, idx, version)
+	a.SetDataDir(cfg.DataDir)
 	if err := a.LoadBYOCredentials(); err != nil {
 		log.Fatalf("load credentials: %v", err)
 	}
@@ -85,6 +86,9 @@ func main() {
 
 	url := cfg.LocalURL()
 	fmt.Print(ui.Banner(version, url, cfg.DataDir))
+	if cfg.ServerMode {
+		fmt.Println("  server mode: auth enabled — share http://<host>:" + fmt.Sprint(cfg.Port))
+	}
 	fmt.Println("  Press Ctrl+C to stop.")
 
 	// Open the default browser only after the listener is bound, so the

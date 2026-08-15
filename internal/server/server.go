@@ -13,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/pleumcloud/pleumcloud/internal/auth"
+
 	"github.com/pleumcloud/pleumcloud/internal/api"
 	"github.com/pleumcloud/pleumcloud/internal/config"
 	web "github.com/pleumcloud/pleumcloud/web"
@@ -32,6 +34,10 @@ func New(cfg *config.Config, a *api.API) *Server {
 	r.Use(middleware.RequestID, middleware.RealIP)
 	r.Use(middleware.Logger, middleware.Recoverer)
 	r.Use(middleware.Timeout(120 * time.Second))
+
+	if cfg.Password != "" {
+		r.Use(auth.Guard(cfg.Password, 250*time.Millisecond))
+	}
 
 	r.Mount("/api", a.Routes())
 

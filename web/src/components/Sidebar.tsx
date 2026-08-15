@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, filesApi, fmtBytes, providerDot, type ProviderMeta } from "../api";
 import ProviderLogo from "./ProviderLogo";
+import RulesDialog from "./RulesDialog";
 
 interface SidebarProps {
   connectedCount: number;
@@ -8,6 +10,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
+  const [showRules, setShowRules] = useState(false);
   const providers = useQuery({
     queryKey: ["providers"],
     queryFn: api.providers,
@@ -30,6 +33,16 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
         <NavButton icon="⭐" label="Starred" disabled />
         <NavButton icon="🗑️" label="Trash" disabled />
       </nav>
+
+      <div className="flex items-center justify-between px-5 pt-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Settings</span>
+        <button
+          onClick={() => setShowRules(true)}
+          className="text-xs font-semibold text-blue-600 hover:underline"
+        >
+          upload rules
+        </button>
+      </div>
 
       <div className="mt-2 px-5 text-xs font-semibold uppercase tracking-wider text-slate-400">
         Clouds ({connectedCount})
@@ -68,6 +81,7 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
       </div>
 
       <QuotaRibbon providers={meta} />
+      {showRules && <RulesDialog onClose={() => setShowRules(false)} />}
     </aside>
   );
 }

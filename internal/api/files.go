@@ -3,12 +3,21 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,7 +50,8 @@ func (a *API) registerFileRoutes(r chi.Router) {
 	r.Post("/rules", a.addRule)
 	r.Delete("/rules/{id}", a.deleteRule)
 	r.Post("/ops", a.ops)
-	r.Get("/file/{id}/download", a.download)
+	r.Get("/file/{id}/download", a.downloadInline)
+	r.Get("/file/{id}/thumb", a.thumb)
 	r.Post("/file/{id}/share", a.share)
 }
 
@@ -152,6 +162,10 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadGateway, err)
 		return
 	}
+	// Connectors without MIME round-trips (plain WebDAV) keep the multipart type.
+	if f.MIME == "" && mime != "" && mime != "application/octet-stream" {
+		f.MIME = mime
+	}
 	if err := a.store.UpsertFile(chosen, f.RemoteID, f.ParentID, f.Name, f.IsDir, f.Size, f.MIME, f.ModTime.Unix()); err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -237,29 +251,6 @@ func (a *API) rulesForEngine() []placement.Rule {
 		out = append(out, placement.Rule{Priority: r.Priority, Field: r.Field, Op: r.Op, Value: r.Value, Target: r.Target})
 	}
 	return out
-}
-
-func (a *API) download(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	row, err := a.store.GetFile(id)
-	if err != nil {
-		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
-		return
-	}
-	conn, ref, err := a.connFor(row.AccountID)
-	if err != nil {
-		writeErr(w, http.StatusBadRequest, err)
-		return
-	}
-	rc, err := conn.Open(r.Context(), ref, row.RemoteID, nil)
-	if err != nil {
-		writeErr(w, http.StatusBadGateway, err)
-		return
-	}
-	defer rc.Close()
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, sanitizeHeader(row.Name)))
-	w.Header().Set("Content-Type", "application/octet-stream")
-	io.Copy(w, rc)
 }
 
 func sanitizeHeader(s string) string {
@@ -489,4 +480,209 @@ func (a *API) addRule(w http.ResponseWriter, r *http.Request) {
 func (a *API) deleteRule(w http.ResponseWriter, r *http.Request) {
 	_ = a.store.DeleteRule(chi.URLParam(r, "id"))
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
+}
+
+// ---- preview & streaming ----
+
+// RangeOpener is implemented by connectors that can serve byte ranges
+// natively (enables video seeking without full downloads).
+type RangeOpener interface {
+	OpenRange(ctx context.Context, acct provider.AccountRef, remoteID string, start, length int64) (io.ReadCloser, error)
+}
+
+// download serves file bytes; ?inline=1 streams with the real MIME type so
+// browsers can preview/play. Range requests are honored through
+// RangeOpener-capable connectors.
+func (a *API) downloadInline(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	inline := r.URL.Query().Get("inline") == "1"
+	row, err := a.store.GetFile(id)
+	if err != nil {
+		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
+		return
+	}
+	conn, ref, err := a.connFor(row.AccountID)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+
+	ctype := row.MIME
+	if ctype == "" {
+		ctype = "application/octet-stream"
+	}
+	if !inline {
+		ctype = "application/octet-stream"
+	}
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("Cache-Control", "private, max-age=0")
+
+	if rng, ok := parseRange(r.Header.Get("Range"), row.Size); ok {
+		if ro, ok := conn.(RangeOpener); ok {
+			rc, err := ro.OpenRange(r.Context(), ref, row.RemoteID, rng.start, rng.length)
+			if err == nil {
+				defer rc.Close()
+				w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.start, rng.start+rng.length-1, row.Size))
+				w.Header().Set("Accept-Ranges", "bytes")
+				w.Header().Set("Content-Length", strconv.FormatInt(rng.length, 10))
+				w.WriteHeader(http.StatusPartialContent)
+				io.Copy(w, rc)
+				return
+			}
+			// Range failed upstream: fall through to a full 200 response.
+		}
+	}
+
+	rc, err := conn.Open(r.Context(), ref, row.RemoteID, nil)
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, err)
+		return
+	}
+	defer rc.Close()
+	w.Header().Set("Accept-Ranges", "bytes")
+	if row.Size > 0 && !inline {
+		w.Header().Set("Content-Length", strconv.FormatInt(row.Size, 10))
+	}
+	if !inline {
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, sanitizeHeader(row.Name)))
+	}
+	io.Copy(w, rc)
+}
+
+type httpRange struct{ start, length int64 }
+
+// parseRange understands single-range requests: bytes=a-b, bytes=a-, bytes=-n.
+func parseRange(h string, size int64) (httpRange, bool) {
+	if h == "" || size <= 0 {
+		return httpRange{}, false
+	}
+	spec, ok := strings.CutPrefix(h, "bytes=")
+	if !ok || strings.Contains(spec, ",") {
+		return httpRange{}, false
+	}
+	starts, lens, found := strings.Cut(spec, "-")
+	if !found {
+		return httpRange{}, false
+	}
+	if starts == "" { // suffix: last N bytes
+		n, err := strconv.ParseInt(lens, 10, 64)
+		if err != nil || n <= 0 || n > size {
+			return httpRange{}, false
+		}
+		return httpRange{start: size - n, length: n}, true
+	}
+	start, err := strconv.ParseInt(starts, 10, 64)
+	if err != nil || start < 0 || start >= size {
+		return httpRange{}, false
+	}
+	if lens == "" {
+		return httpRange{start: start, length: size - start}, true
+	}
+	end, err := strconv.ParseInt(lens, 10, 64)
+	if err != nil || end < start {
+		return httpRange{}, false
+	}
+	if end >= size {
+		end = size - 1
+	}
+	return httpRange{start: start, length: end - start + 1}, true
+}
+
+// ---- thumbnails ----
+
+// thumb generates (once) and serves a local JPEG thumbnail for image files,
+// uniformly across every provider: the source is fetched through the
+// connector, downscaled in-process (pure stdlib), and cached on disk.
+func (a *API) thumb(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	row, err := a.store.GetFile(id)
+	if err != nil || row.IsDir {
+		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
+		return
+	}
+	if !strings.HasPrefix(row.MIME, "image/") && !isImageName(row.Name) {
+		writeErr(w, http.StatusUnsupportedMediaType, fmt.Errorf("not an image"))
+		return
+	}
+	cachePath := filepath.Join(a.thumbDir, id+".jpg")
+	if b, err := os.ReadFile(cachePath); err == nil {
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Header().Set("Cache-Control", "private, max-age=86400")
+		w.Write(b)
+		return
+	}
+
+	conn, ref, err := a.connFor(row.AccountID)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	rc, err := conn.Open(r.Context(), ref, row.RemoteID, nil)
+	if err != nil {
+		writeErr(w, http.StatusBadGateway, err)
+		return
+	}
+	defer rc.Close()
+	img, _, err := image.Decode(rc)
+	if err != nil {
+		writeErr(w, http.StatusUnprocessableEntity, fmt.Errorf("decode image: %v", err))
+		return
+	}
+	thumb := scaleDown(img, 384)
+	if err := os.MkdirAll(a.thumbDir, 0o700); err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, thumb, &jpeg.Options{Quality: 80}); err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	_ = os.WriteFile(cachePath, buf.Bytes(), 0o600)
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Cache-Control", "private, max-age=86400")
+	w.Write(buf.Bytes())
+}
+
+func isImageName(name string) bool {
+	switch {
+	case strings.HasSuffix(name, ".jpg"), strings.HasSuffix(name, ".jpeg"),
+		strings.HasSuffix(name, ".png"), strings.HasSuffix(name, ".gif"),
+		strings.HasSuffix(name, ".webp"), strings.HasSuffix(name, ".bmp"):
+		return true
+	}
+	return false
+}
+
+// scaleDown shrinks img to fit max on the long edge (nearest neighbor).
+func scaleDown(img image.Image, max int) image.Image {
+	b := img.Bounds()
+	w, h := b.Dx(), b.Dy()
+	if w <= max && h <= max {
+		return img
+	}
+	scale := float64(max) / float64(maxInt(w, h))
+	nw, nh := int(float64(w)*scale), int(float64(h)*scale)
+	if nw < 1 {
+		nw = 1
+	}
+	if nh < 1 {
+		nh = 1
+	}
+	dst := image.NewRGBA(image.Rect(0, 0, nw, nh))
+	for y := 0; y < nh; y++ {
+		sy := b.Min.Y + y*h/nh
+		for x := 0; x < nw; x++ {
+			sx := b.Min.X + x*w/nw
+			dst.Set(x, y, img.At(sx, sy))
+		}
+	}
+	return dst
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

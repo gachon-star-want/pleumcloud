@@ -112,10 +112,16 @@ disk — every file carries a badge showing which cloud it lives on.
   transfer keeps going.
 - 🔗 **Share links, downloads, rename/move/copy/delete** — the everyday
   file ops, from one place.
+- 👁 **Previews & streaming** — click a file for full preview: images,
+  seekable video (native byte-range), audio, PDF. Gallery grid view with
+  locally generated thumbnails that work on every provider.
+- 📏 **Rules editor** — manage upload rules in the UI (priority order,
+  first match wins; no match → most free space).
 - 🖥️ **Local-first** — a single ~18 MB binary with the UI embedded. No
-  account, no telemetry, no server required (self-hosted server mode is on
-  the roadmap).
-- 🧩 **17 providers** — 9 hand-built native connectors plus 8 more through
+  account, no telemetry. Need remote access? `PLEUMCLOUD_SERVER=1
+  PLEUMCLOUD_PASSWORD=… pleumcloud` guards it with Basic auth (pair with
+  HTTPS on a NAS/VPS).
+- 🧩 **18 providers** — 10 hand-built native connectors plus 8 more through
   the rclone bridge, all behind one interface.
 
 ## Supported clouds
@@ -131,12 +137,12 @@ disk — every file carries a badge showing which cloud it lives on.
 | Koofr | 10 GB | Email + token | ✅ Native |
 | WebDAV (Nextcloud, ownCloud, MagentaCloud, …) | — | URL + login | ✅ Native |
 | InfiniCLOUD | 20 GB | URL + login | ✅ Native |
+| MediaFire | 10 GB | App credentials | ✅ Native |
 | MEGA · Box · Yandex Disk · HiDrive · Jottacloud · Filen · Internxt · Proton Drive | 5–20 GB | [rclone](https://rclone.org) bridge | 🧪 Experimental |
 | iCloud Drive · Samsung Cloud · TeraBox · Sync.com | — | — | ❌ No official API — see [why](docs/provider-decisions.md) |
 
-MediaFire (official REST API) is next in the pipeline. The full matrix,
-including every service we evaluated and rejected, lives in
-[docs/provider-decisions.md](docs/provider-decisions.md).
+The full matrix, including every service we evaluated and rejected, lives
+in [docs/provider-decisions.md](docs/provider-decisions.md).
 
 ## Install
 
@@ -202,9 +208,9 @@ upload protocol.
 - [x] M2 — 9 native connectors + rclone bridge (OAuth, keychain, TDD)
 - [x] M3 — unified browsing, search, quota dashboard
 - [x] M4 — smart placement + rules, cross-cloud transfer queue, sharing
-- [ ] M5 — thumbnails & gallery, video streaming, rules editor UI
-- [ ] Self-hosted server mode (accounts, HTTPS, Docker, NAS images)
-- [ ] Hosted service for everyone else
+- [x] M5 — thumbnails & gallery, previews/streaming, rules editor UI
+- [x] Remote-access server mode (Basic auth; pair with your HTTPS reverse proxy)
+- [ ] Docker images, NAS one-clicks, hosted service for everyone else
 
 ## Contributing
 

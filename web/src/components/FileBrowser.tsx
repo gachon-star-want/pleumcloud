@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { filesApi, fmtBytes, fmtDate, type FileRow } from "../api";
+import { filesApi, fmtBytes, fmtDate, thumbURL, type FileRow } from "../api";
 import { api, providerDot } from "../api";
 import ProviderLogo from "./ProviderLogo";
 import Modal from "./Modal";
+import Preview from "./Preview";
 
 interface Crumb {
   remoteId: string;
@@ -14,6 +15,8 @@ interface Crumb {
 export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
   const [crumbs, setCrumbs] = useState<Crumb[]>([]); // [] = unified root
   const [transferFile, setTransferFile] = useState<FileRow | null>(null);
+  const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
+  const [gallery, setGallery] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const qc = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -61,6 +64,28 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
 
   const files = tree.data?.files ?? [];
   const busy = tree.isLoading;
+  const images = files.filter((f) => !f.isDir && (f.mime?.startsWith("image/") || /\.(jpe?g|png|gif|webp)$/i.test(f.name)));
+
+  const galleryGrid = (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      {images.map((f) => (
+        <button
+          key={f.id}
+          onClick={() => setPreviewFile(f)}
+          className="group relative overflow-hidden rounded-xl bg-slate-200 shadow-sm transition hover:shadow-md"
+        >
+          <img src={thumbURL(f.id)} alt={f.name} loading="lazy" className="aspect-square w-full object-cover" />
+          <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 text-left text-xs font-medium text-white">
+            {f.name}
+          </span>
+          <span
+            className="absolute right-2 top-2 size-2.5 rounded-full ring-2 ring-white"
+            style={{ background: providerDot(f.providerId) }}
+          />
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -85,6 +110,17 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
           >
             + Folder
           </button>
+          {images.length > 0 && (
+            <button
+              onClick={() => setGallery((g) => !g)}
+              title="Gallery view"
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold ${
+                gallery ? "border-blue-400 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
+              }`}
+            >
+              {gallery ? "▤ List" : "🖼 Gallery"}
+            </button>
+          )}
           <button
             onClick={() => fileInput.current?.click()}
             disabled={upload.isPending}
@@ -107,6 +143,8 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
 
       {busy ? (
         <p className="py-16 text-center text-sm text-slate-400">Loading…</p>
+      ) : gallery && images.length > 0 ? (
+        galleryGrid
       ) : files.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
           <p className="font-semibold text-slate-600">Nothing here yet</p>
@@ -141,6 +179,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
                       className="flex max-w-xs items-center gap-2.5 text-left"
                       onClick={() => {
                         if (f.isDir) setCrumbs([...crumbs, { remoteId: f.remoteId, name: f.name, accountId: f.accountId }]);
+                        else setPreviewFile(f);
                       }}
                     >
                       <span className="text-lg leading-none">{f.isDir ? "🗂️" : fileIcon(f)}</span>
@@ -167,6 +206,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
                         if (name) act.mutate({ op: "rename", id: f.id, name });
                       }}
                       onTransfer={() => setTransferFile(f)}
+                      onPreview={() => setPreviewFile(f)}
                     />
                   </td>
                 </tr>
@@ -176,6 +216,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
         </div>
       )}
 
+      {previewFile && <Preview file={previewFile} onClose={() => setPreviewFile(null)} />}
       {transferFile && (
         <TransferDialog file={transferFile} onClose={() => setTransferFile(null)} onQueued={(msg) => { setToast(msg); setTransferFile(null); }} />
       )}
@@ -227,16 +268,23 @@ function RowActions({
   onDelete,
   onRename,
   onTransfer,
+  onPreview,
 }: {
   file: FileRow;
   onShare: () => void;
   onDelete: () => void;
   onRename: () => void;
   onTransfer: () => void;
+  onPreview: () => void;
 }) {
   const btn = "rounded-lg px-1.5 py-1 text-slate-400 opacity-0 transition group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-700";
   return (
     <span className="inline-flex gap-0.5 whitespace-nowrap">
+      {!file.isDir && (
+        <button onClick={onPreview} title="Preview" className={btn}>
+          👁
+        </button>
+      )}
       {!file.isDir && (
         <a href={`/api/file/${file.id}/download`} title="Download" className={btn}>
           ⬇

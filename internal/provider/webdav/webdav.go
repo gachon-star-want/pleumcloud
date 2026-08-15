@@ -309,3 +309,12 @@ func (p *preset) Metadata() provider.Metadata {
 func init() {
 	initPreset("infinicloud", "InfiniCLOUD", "https://infini-cloud.net/en/developer_api.html", 20)
 }
+
+// OpenRange serves a byte range natively (PROPFIND servers honor GET Range).
+func (c *connector) OpenRange(ctx context.Context, acct provider.AccountRef, remoteID string, start, length int64) (io.ReadCloser, error) {
+	cl, err := c.client(acct)
+	if err != nil {
+		return nil, err
+	}
+	return cl.ReadStreamRange("/"+remoteID, start, length)
+}

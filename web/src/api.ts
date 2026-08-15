@@ -195,3 +195,10 @@ export function fmtDate(unix: number): string {
   if (!unix) return "—";
   return new Date(unix * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
+
+export function inlineURL(id: string): string {
+  return `/api/file/${id}/download?inline=1`;
+}
+export function thumbURL(id: string): string {
+  return `/api/file/${id}/thumb`;
+}

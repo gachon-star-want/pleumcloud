@@ -14,6 +14,8 @@ const (
 	envPort      = "PLEUMCLOUD_PORT"
 	envBind      = "PLEUMCLOUD_BIND"
 	envNoBrowser = "PLEUMCLOUD_NO_BROWSER"
+	envServer    = "PLEUMCLOUD_SERVER"
+	envPassword  = "PLEUMCLOUD_PASSWORD"
 )
 
 // Config holds resolved runtime settings.
@@ -26,6 +28,10 @@ type Config struct {
 	Bind string
 	// NoBrowser skips auto-opening the default browser on startup.
 	NoBrowser bool
+	// ServerMode binds on all interfaces and requires the auth password.
+	ServerMode bool
+	// Password guards the whole surface in server mode.
+	Password string
 }
 
 func Load() (*Config, error) {
@@ -56,6 +62,16 @@ func Load() (*Config, error) {
 	switch os.Getenv(envNoBrowser) {
 	case "1", "true", "yes":
 		cfg.NoBrowser = true
+	}
+	switch os.Getenv(envServer) {
+	case "1", "true", "yes":
+		cfg.ServerMode = true
+		cfg.Bind = "0.0.0.0"
+		cfg.NoBrowser = true // a headless server has no browser to open
+		cfg.Password = os.Getenv(envPassword)
+		if cfg.Password == "" {
+			return nil, fmt.Errorf("PLEUMCLOUD_SERVER=1 requires PLEUMCLOUD_PASSWORD to be set")
+		}
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0o700); err != nil {
