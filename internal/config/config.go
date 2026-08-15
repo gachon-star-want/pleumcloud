@@ -32,6 +32,8 @@ type Config struct {
 	ServerMode bool
 	// Password guards the whole surface in server mode.
 	Password string
+	// MultiUser enables accounts, registration and per-user data scoping.
+	MultiUser bool
 }
 
 func Load() (*Config, error) {
@@ -61,6 +63,12 @@ func Load() (*Config, error) {
 	}
 	switch os.Getenv(envNoBrowser) {
 	case "1", "true", "yes":
+		cfg.NoBrowser = true
+	}
+	switch os.Getenv("PLEUMCLOUD_MULTIUSER") {
+	case "1", "true", "yes":
+		cfg.MultiUser = true
+		cfg.Bind = "0.0.0.0"
 		cfg.NoBrowser = true
 	}
 	switch os.Getenv(envServer) {

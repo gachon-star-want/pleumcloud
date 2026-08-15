@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, type ProviderMeta } from "../api";
 import ProviderLogo from "./ProviderLogo";
 import Modal from "./Modal";
+import { useT } from "../i18n";
 
 type Dialog =
   | { kind: "pat"; provider: ProviderMeta }
@@ -12,6 +13,7 @@ type Dialog =
   | null;
 
 export default function ConnectPanel() {
+  const t = useT();
   const [dialog, setDialog] = useState<Dialog>(null);
   const [error, setError] = useState<string | null>(null);
   const qc = useQueryClient();
@@ -72,7 +74,7 @@ export default function ConnectPanel() {
       {connected.length > 0 && (
         <section className="mb-8">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Connected ({connected.length})
+            {t("connected")} ({connected.length})
           </h3>
           <div className="space-y-2">
             {connected.map((a) => {
@@ -105,7 +107,7 @@ export default function ConnectPanel() {
           Full support
         </h3>
         <p className="mb-4 text-sm text-slate-500">
-          One-click connect with official APIs.
+          {t("oneClick")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {native.map((p) => (
@@ -116,11 +118,10 @@ export default function ConnectPanel() {
 
       <section>
         <h3 className="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-400">
-          Experimental
+          {t("experimental")}
         </h3>
         <p className="mb-4 text-sm text-slate-500">
-          Served through the rclone bridge — connect with credentials from each
-          service.
+          {t("experimentalDesc")}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {experimental.map((p) => (
@@ -151,6 +152,7 @@ function ProviderCard({
   p: ProviderMeta;
   onConnect: (p: ProviderMeta) => void;
 }) {
+  const t = useT();
   const ready = p.supported;
   return (
     <button
@@ -178,7 +180,7 @@ function ProviderCard({
       <span
         className={`text-sm font-semibold ${ready ? "text-blue-600" : "text-slate-400"}`}
       >
-        {ready ? "Connect" : "Soon"}
+        {ready ? t("connect") : t("soon")}
       </span>
     </button>
   );

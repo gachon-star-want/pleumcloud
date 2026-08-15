@@ -1,0 +1,21 @@
+# One drive for all your free cloud storage — on your NAS/VPS.
+#   docker compose up -d
+# Then open http://<host>:7777 and connect your clouds.
+services:
+  pleumcloud:
+    image: ghcr.io/gachon-star-want/pleumcloud:latest
+    build: .
+    restart: unless-stopped
+    ports:
+      - "7777:7777"
+    volumes:
+      - pleum-data:/data
+    environment:
+      PLEUMCLOUD_DATA: /data
+      # Multi-user (registration + per-user isolation):
+      # PLEUMCLOUD_MULTIUSER: "1"
+      # Or single-password server mode:
+      # PLEUMCLOUD_SERVER: "1"
+      # PLEUMCLOUD_PASSWORD: change-me
+volumes:
+  pleum-data:

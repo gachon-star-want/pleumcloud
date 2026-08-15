@@ -9,9 +9,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pleumcloud/pleumcloud/internal/api"
+	"github.com/pleumcloud/pleumcloud/internal/auth"
 	"github.com/pleumcloud/pleumcloud/internal/browser"
 	"github.com/pleumcloud/pleumcloud/internal/config"
 	"github.com/pleumcloud/pleumcloud/internal/index"
@@ -61,12 +63,31 @@ func main() {
 	}
 	defer st.Close()
 
-	secrets := secret.New(cfg.DataDir)
+	var secrets secret.Store = secret.New(cfg.DataDir)
+	if !cfg.MultiUser {
+		// Local mode keeps the keychain-or-file store as-is.
+		_ = secrets
+	} else {
+		// Server deployments deserve encryption at rest even on the file
+		// fallback; keychain users already get OS protection.
+		if es, err := secret.NewEncryptedFileStore(cfg.DataDir); err == nil {
+			secrets = es
+		} else {
+			log.Fatalf("secret store: %v", err)
+		}
+	}
 	oauth := oauthflow.NewManager(secrets)
 	idx := index.New(st)
+	tokens, err := auth.LoadOrCreateTokenKey(filepath.Join(cfg.DataDir, "auth.key"))
+	if err != nil {
+		log.Fatalf("token key: %v", err)
+	}
 
-	a := api.New(st, secrets, oauth, idx, version)
+	a := api.New(st, secrets, oauth, idx, tokens, cfg.MultiUser, version)
 	a.SetDataDir(cfg.DataDir)
+	if err := a.InitLocalUser(); err != nil {
+		log.Fatalf("local user: %v", err)
+	}
 	if err := a.LoadBYOCredentials(); err != nil {
 		log.Fatalf("load credentials: %v", err)
 	}
@@ -86,7 +107,9 @@ func main() {
 
 	url := cfg.LocalURL()
 	fmt.Print(ui.Banner(version, url, cfg.DataDir))
-	if cfg.ServerMode {
+	if cfg.MultiUser {
+		fmt.Println("  multi-user mode: registration open at /  (share http://<host>:" + fmt.Sprint(cfg.Port) + ")")
+	} else if cfg.ServerMode {
 		fmt.Println("  server mode: auth enabled — share http://<host>:" + fmt.Sprint(cfg.Port))
 	}
 	fmt.Println("  Press Ctrl+C to stop.")

@@ -39,27 +39,26 @@ func jsonDecode(r *http.Request, v any) error {
 }
 
 func (a *API) registerFileRoutes(r chi.Router) {
-	r.Get("/tree", a.tree)
-	r.Get("/search", a.search)
-	r.Get("/usage", a.usage)
-	r.Post("/sync", a.syncNow)
-	r.Post("/upload", a.upload)
-	r.Get("/jobs", a.jobs)
-	r.Post("/transfer", a.transfer)
-	r.Get("/rules", a.listRules)
-	r.Post("/rules", a.addRule)
-	r.Delete("/rules/{id}", a.deleteRule)
-	r.Post("/ops", a.ops)
-	r.Get("/file/{id}/download", a.downloadInline)
-	r.Get("/file/{id}/thumb", a.thumb)
-	r.Post("/file/{id}/share", a.share)
+	r.Get("/tree", a.requireUser(a.tree))
+	r.Get("/search", a.requireUser(a.search))
+	r.Post("/sync", a.requireUser(a.syncNow))
+	r.Post("/upload", a.requireUser(a.upload))
+	r.Get("/jobs", a.requireUser(a.jobs))
+	r.Post("/transfer", a.requireUser(a.transfer))
+	r.Get("/rules", a.requireUser(a.listRules))
+	r.Post("/rules", a.requireUser(a.addRule))
+	r.Delete("/rules/{id}", a.requireUser(a.deleteRule))
+	r.Post("/ops", a.requireUser(a.ops))
+	r.Get("/file/{id}/download", a.requireUser(a.downloadInline))
+	r.Get("/file/{id}/thumb", a.requireUser(a.thumb))
+	r.Post("/file/{id}/share", a.requireUser(a.share))
 }
 
 // deps builds connector instances for the account's provider.
 func (a *API) deps() provider.Deps { return provider.Deps{Secrets: a.secrets} }
 
-func (a *API) connFor(accountID string) (provider.Connector, provider.AccountRef, error) {
-	row, err := a.store.GetAccount(accountID)
+func (a *API) connForUser(accountID, user string) (provider.Connector, provider.AccountRef, error) {
+	row, err := a.store.GetAccountForUser(accountID, user)
 	if err != nil {
 		return nil, provider.AccountRef{}, fmt.Errorf("account not found")
 	}
@@ -73,7 +72,7 @@ func (a *API) connFor(accountID string) (provider.Connector, provider.AccountRef
 func (a *API) tree(w http.ResponseWriter, r *http.Request) {
 	parent := r.URL.Query().Get("parent")
 	account := r.URL.Query().Get("account")
-	files, err := a.store.ListChildren(parent, account)
+	files, err := a.store.ListChildrenForUser(parent, account, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -90,7 +89,7 @@ func (a *API) search(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"results": []storeFile{}})
 		return
 	}
-	res, err := a.store.SearchFiles(q)
+	res, err := a.store.SearchFilesForUser(q, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -103,12 +102,28 @@ func (a *API) search(w http.ResponseWriter, r *http.Request) {
 
 // usage returns live quota per account, computed in parallel.
 func (a *API) usage(w http.ResponseWriter, r *http.Request) {
-	entries := a.usageEntries(r.Context())
+	entries := a.usageEntries(r.Context(), userID(r))
 	writeJSON(w, http.StatusOK, map[string]any{"usage": entries})
 }
 
 func (a *API) syncNow(w http.ResponseWriter, r *http.Request) {
-	errs := a.indexer.SyncAll(r.Context(), a.deps(), provider.Build)
+	errs := map[string]error{}
+	accts, err := a.store.ListAccountsWithSecrets()
+	if err != nil {
+		errs["*"] = err
+	} else {
+		for _, acct := range accts {
+			owner, err2 := a.store.GetAccountForUser(acct.ID, userID(r))
+			if err2 != nil {
+				continue // not this user's account
+			}
+			if conn, ok := provider.Build(acct.ProviderID, a.deps()); ok {
+				if _, err := a.indexer.Sync(r.Context(), provider.AccountRef{ID: acct.ID, ProviderID: acct.ProviderID, SecretRef: owner.SecretRef}, conn); err != nil {
+					errs[acct.ID] = err
+				}
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"synced": true, "errors": errs})
 }
 
@@ -140,19 +155,19 @@ func (a *API) upload(w http.ResponseWriter, r *http.Request) {
 	case parentAccount != "":
 		chosen = parentAccount // uploading into a specific folder targets its account
 	default:
-		free := a.liveFreeBytes(r.Context())
+		free := a.liveFreeBytes(r.Context(), userID(r))
 		var cands []placement.Account
 		for acctID, f := range free {
 			cands = append(cands, placement.Account{ID: acctID, Free: f})
 		}
-		chosen = placement.Decide(placement.FileInfo{Name: hdr.Filename, Size: size, MIME: mime}, cands, a.rulesForEngine())
+		chosen = placement.Decide(placement.FileInfo{Name: hdr.Filename, Size: size, MIME: mime}, cands, a.rulesForEngineFor(userID(r)))
 	}
 	if chosen == "" {
 		writeErr(w, http.StatusUnprocessableEntity, fmt.Errorf("no account can hold this file"))
 		return
 	}
 
-	conn, ref, err := a.connFor(chosen)
+	conn, ref, err := a.connForUser(chosen, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err)
 		return
@@ -181,15 +196,27 @@ type usageEntry struct {
 	Error      string `json:"error,omitempty"`
 }
 
-// usageEntries fetches live quotas for every account in parallel.
-func (a *API) usageEntries(ctx context.Context) []usageEntry {
+// usageEntries fetches live quotas for the user's accounts in parallel.
+func (a *API) usageEntries(ctx context.Context, user string) []usageEntry {
 	accts, err := a.store.ListAccountsWithSecrets()
 	if err != nil {
 		return nil
 	}
-	entries := make([]usageEntry, len(accts))
+	owned := map[string]store.AccountRow{}
+	for _, ac := range accts {
+		if row, err := a.store.GetAccountForUser(ac.ID, user); err == nil {
+			owned[ac.ID] = row
+		}
+	}
+	var filtered []store.AccountRow
+	for _, ac := range accts {
+		if row, ok := owned[ac.ID]; ok {
+			filtered = append(filtered, row)
+		}
+	}
+	entries := make([]usageEntry, len(filtered))
 	var wg sync.WaitGroup
-	for i, ac := range accts {
+	for i, ac := range filtered {
 		wg.Add(1)
 		go func(i int, acctID, providerID, secretRef string) {
 			defer wg.Done()
@@ -223,9 +250,9 @@ func (a *API) usageEntries(ctx context.Context) []usageEntry {
 const unknownFree = 1 << 40
 
 // liveFreeBytes returns free space per account (placement input).
-func (a *API) liveFreeBytes(ctx context.Context) map[string]int64 {
+func (a *API) liveFreeBytes(ctx context.Context, user string) map[string]int64 {
 	out := map[string]int64{}
-	for _, e := range a.usageEntries(ctx) {
+	for _, e := range a.usageEntries(ctx, user) {
 		if e.Error != "" {
 			continue
 		}
@@ -238,8 +265,8 @@ func (a *API) liveFreeBytes(ctx context.Context) map[string]int64 {
 	return out
 }
 
-func (a *API) rulesForEngine() []placement.Rule {
-	rows, err := a.store.ListRules()
+func (a *API) rulesForEngineFor(user string) []placement.Rule {
+	rows, err := a.store.ListRulesForUser(user)
 	if err != nil {
 		return nil
 	}
@@ -270,12 +297,12 @@ func (a *API) share(w http.ResponseWriter, r *http.Request) {
 		Create bool `json:"create"`
 	}
 	_ = jsonDecode(r, &req)
-	row, err := a.store.GetFile(id)
+	row, err := a.store.GetFileForUser(id, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
 		return
 	}
-	conn, ref, err := a.connFor(row.AccountID)
+	conn, ref, err := a.connForUser(row.AccountID, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err)
 		return
@@ -306,7 +333,7 @@ func (a *API) ops(w http.ResponseWriter, r *http.Request) {
 
 	switch req.Op {
 	case "mkdir":
-		conn, ref, err := a.connFor(req.Account)
+		conn, ref, err := a.connForUser(req.Account, userID(r))
 		if err != nil {
 			writeErr(w, http.StatusBadRequest, err)
 			return
@@ -320,19 +347,19 @@ func (a *API) ops(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusCreated, map[string]any{"created": f})
 
 	case "rename", "move", "copy", "delete":
-		row, err := a.store.GetFile(req.ID)
+		row, err := a.store.GetFileForUser(req.ID, userID(r))
 		if err != nil {
 			writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
 			return
 		}
-		conn, ref, err := a.connFor(row.AccountID)
+		conn, ref, err := a.connForUser(row.AccountID, userID(r))
 		if err != nil {
 			writeErr(w, http.StatusBadRequest, err)
 			return
 		}
 		newParentRemote, newName := "", req.Name
 		if req.NewParentID != "" {
-			dst, err := a.store.GetFile(req.NewParentID)
+			dst, err := a.store.GetFileForUser(req.NewParentID, userID(r))
 			if err != nil {
 				writeErr(w, http.StatusBadRequest, fmt.Errorf("destination not found"))
 				return
@@ -412,12 +439,12 @@ func (a *API) transfer(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
 		return
 	}
-	dst, err := a.store.GetAccount(req.DstAccount)
+	dst, err := a.store.GetAccountForUser(req.DstAccount, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, fmt.Errorf("destination account not found"))
 		return
 	}
-	jobID, err := a.store.AddJob("transfer", row.Name, row.AccountID, row.RemoteID, req.DstAccount, dst.ProviderID, row.Size)
+	jobID, err := a.store.AddJobForUser(userID(r), "transfer", row.Name, row.AccountID, row.RemoteID, req.DstAccount, dst.ProviderID, row.Size)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -426,7 +453,7 @@ func (a *API) transfer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) jobs(w http.ResponseWriter, r *http.Request) {
-	jobs, err := a.store.ListJobs(50)
+	jobs, err := a.store.ListJobsForUser(userID(r), 50)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -438,7 +465,7 @@ func (a *API) jobs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) listRules(w http.ResponseWriter, r *http.Request) {
-	rules, err := a.store.ListRules()
+	rules, err := a.store.ListRulesForUser(userID(r))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -469,7 +496,7 @@ func (a *API) addRule(w http.ResponseWriter, r *http.Request) {
 	if req.Priority == 0 {
 		req.Priority = 100
 	}
-	id, err := a.store.AddRule(req.Priority, enabled, req.Field, req.Op, req.Value, req.Target)
+	id, err := a.store.AddRuleForUser(userID(r), req.Priority, enabled, req.Field, req.Op, req.Value, req.Target)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -478,7 +505,7 @@ func (a *API) addRule(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) deleteRule(w http.ResponseWriter, r *http.Request) {
-	_ = a.store.DeleteRule(chi.URLParam(r, "id"))
+	_ = a.store.DeleteRuleForUser(chi.URLParam(r, "id"), userID(r))
 	writeJSON(w, http.StatusOK, map[string]any{"deleted": true})
 }
 
@@ -496,12 +523,12 @@ type RangeOpener interface {
 func (a *API) downloadInline(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	inline := r.URL.Query().Get("inline") == "1"
-	row, err := a.store.GetFile(id)
+	row, err := a.store.GetFileForUser(id, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
 		return
 	}
-	conn, ref, err := a.connFor(row.AccountID)
+	conn, ref, err := a.connForUser(row.AccountID, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err)
 		return
@@ -612,7 +639,7 @@ func (a *API) thumb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, ref, err := a.connFor(row.AccountID)
+	conn, ref, err := a.connForUser(row.AccountID, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err)
 		return

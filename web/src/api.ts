@@ -57,6 +57,12 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
 
 export const api = {
   health: () => get<Health>("/api/health"),
+  authMode: () => get<{ multiuser: boolean }>("/api/auth/mode"),
+  login: (email: string, password: string) =>
+    send<{ email: string }>("/api/auth/login", "POST", { email, password }),
+  register: (email: string, password: string) =>
+    send<{ email: string }>("/api/auth/register", "POST", { email, password }),
+  logout: () => send<{ ok: boolean }>("/api/auth/logout", "POST"),
   providers: () => get<{ providers: ProviderMeta[] }>("/api/providers"),
   accounts: () => get<{ accounts: Account[] }>("/api/accounts"),
   credentials: () => get<{ credentials: Credential[] }>("/api/credentials"),

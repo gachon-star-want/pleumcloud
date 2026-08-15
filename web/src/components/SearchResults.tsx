@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { filesApi, fmtBytes, providerDot } from "../api";
+import { useT } from "../i18n";
 
 export default function SearchResults({ query }: { query: string }) {
+  const t = useT();
   const res = useQuery({
     queryKey: ["search", query],
     queryFn: () => filesApi.search(query),
@@ -11,7 +13,7 @@ export default function SearchResults({ query }: { query: string }) {
   return (
     <div className="mx-auto max-w-3xl">
       <p className="mb-3 text-sm text-slate-500">
-        {res.isLoading ? "Searching…" : `${results.length} result${results.length === 1 ? "" : "s"} for “${query}”`}
+        {res.isLoading ? t("searching") : `${results.length} ${t("results")} “${query}”`}
       </p>
       <div className="space-y-1.5">
         {results.map((f) => (

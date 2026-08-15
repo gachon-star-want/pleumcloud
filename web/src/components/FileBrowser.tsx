@@ -5,6 +5,7 @@ import { api, providerDot } from "../api";
 import ProviderLogo from "./ProviderLogo";
 import Modal from "./Modal";
 import Preview from "./Preview";
+import { useT } from "../i18n";
 
 interface Crumb {
   remoteId: string;
@@ -13,6 +14,7 @@ interface Crumb {
 }
 
 export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
+  const t = useT();
   const [crumbs, setCrumbs] = useState<Crumb[]>([]); // [] = unified root
   const [transferFile, setTransferFile] = useState<FileRow | null>(null);
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
@@ -108,7 +110,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
             }}
             className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:border-blue-300"
           >
-            + Folder
+            {t("newFolder")}
           </button>
           {images.length > 0 && (
             <button
@@ -118,7 +120,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
                 gallery ? "border-blue-400 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-300"
               }`}
             >
-              {gallery ? "▤ List" : "🖼 Gallery"}
+              {gallery ? t("list") : t("gallery")}
             </button>
           )}
           <button
@@ -126,7 +128,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
             disabled={upload.isPending}
             className="rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {upload.isPending ? "Uploading…" : "⬆ Upload"}
+            {upload.isPending ? t("uploading") : t("upload")}
           </button>
           <input
             ref={fileInput}
@@ -142,20 +144,18 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
       </div>
 
       {busy ? (
-        <p className="py-16 text-center text-sm text-slate-400">Loading…</p>
+        <p className="py-16 text-center text-sm text-slate-400">{t("loading")}</p>
       ) : gallery && images.length > 0 ? (
         galleryGrid
       ) : files.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
-          <p className="font-semibold text-slate-600">Nothing here yet</p>
+          <p className="font-semibold text-slate-600">{t("nothingHere")}</p>
           <p className="mt-1 text-sm text-slate-400">
-            {crumbs.length === 0
-              ? "Connect a cloud and it will appear here after syncing."
-              : "Drop a file or create a folder."}
+            {crumbs.length === 0 ? t("connectPrompt") : t("dropOrFolder")}
           </p>
           {crumbs.length === 0 && (
             <button onClick={onConnect} className="mt-4 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white">
-              Connect a cloud
+              {t("connectCloud")}
             </button>
           )}
         </div>
@@ -239,13 +239,14 @@ function fileIcon(f: FileRow): string {
 }
 
 function Breadcrumbs({ crumbs, onNavigate }: { crumbs: Crumb[]; onNavigate: (i: number) => void }) {
+  const t = useT();
   return (
     <nav className="flex items-center gap-1 text-sm">
       <button
         onClick={() => onNavigate(-1)}
         className={`rounded-lg px-2 py-1 font-semibold ${crumbs.length === 0 ? "text-blue-700" : "text-slate-500 hover:bg-slate-100"}`}
       >
-        All Drives
+        {t("allDrives")}
       </button>
       {crumbs.map((c, i) => (
         <span key={i} className="flex items-center gap-1">

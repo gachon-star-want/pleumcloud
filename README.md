@@ -89,6 +89,13 @@ curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/sc
 
 Then run `pleumcloud` — your browser opens at `http://localhost:7777`.
 
+**Docker (NAS/VPS):**
+
+```bash
+mkdir pleumcloud && cd pleumcloud && curl -fsSL -o docker-compose.yml   https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/docker-compose.yml
+docker compose up -d          # → http://<host>:7777
+```
+
 **Other ways:**
 
 ```bash
@@ -98,6 +105,14 @@ cd pleumcloud && make build && ./pleumcloud
 
 # Windows: download the .zip from Releases
 ```
+
+**Running modes**
+
+| Mode | How | Who it's for |
+|---|---|---|
+| Local | `pleumcloud` | One person, one machine — no auth, loopback only |
+| Server | `PLEUMCLOUD_SERVER=1 PLEUMCLOUD_PASSWORD=… pleumcloud` | You, from anywhere — one shared password |
+| Multi-user | `PLEUMCLOUD_MULTIUSER=1` (see compose) | Family/team — email sign-up, per-user data isolation |
 
 **First OAuth connection?** Grab a free app key once using
 [docs/oauth-setup.md](docs/oauth-setup.md) (10 minutes, one-time per

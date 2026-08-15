@@ -134,6 +134,23 @@ var migrations = []migration{
 			`CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
 		},
 	},
+	{
+		version: 2,
+		stmts: []string{
+			`CREATE TABLE IF NOT EXISTS users (
+				id            TEXT PRIMARY KEY,
+				email         TEXT NOT NULL UNIQUE,
+				password_hash TEXT NOT NULL,
+				created_at    INTEGER NOT NULL
+			)`,
+			`ALTER TABLE accounts ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'`,
+			`ALTER TABLE jobs ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'`,
+			`ALTER TABLE rules ADD COLUMN user_id TEXT NOT NULL DEFAULT 'local'`,
+			`CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id)`,
+			`CREATE INDEX IF NOT EXISTS idx_jobs_user ON jobs(user_id)`,
+			`CREATE INDEX IF NOT EXISTS idx_rules_user ON rules(user_id)`,
+		},
+	},
 }
 
 func (s *Store) migrate() error {
@@ -549,5 +566,224 @@ func (s *Store) AddRule(priority int, enabled bool, field, op, value, target str
 
 func (s *Store) DeleteRule(id string) error {
 	_, err := s.db.Exec(`DELETE FROM rules WHERE id = ?`, id)
+	return err
+}
+
+// ---- users ----
+
+type UserRow struct {
+	ID           string `json:"id"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"-"`
+}
+
+// EnsureUser returns the user id for an email, creating the row if needed.
+func (s *Store) EnsureUser(email, hash string) (string, error) {
+	if id, err := s.UserIDByEmail(email); err == nil && id != "" {
+		return id, nil
+	}
+	id := newIDForFile()
+	_, err := s.db.Exec(`INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT(email) DO NOTHING`, id, email, hash, time.Now().Unix())
+	if err != nil {
+		return "", err
+	}
+	return s.UserIDByEmail(email)
+}
+
+func (s *Store) UserIDByEmail(email string) (string, error) {
+	var id string
+	err := s.db.QueryRow(`SELECT id FROM users WHERE email = ?`, email).Scan(&id)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return id, err
+}
+
+// UserByEmail returns the full row (hash included) for login checks.
+func (s *Store) UserByEmail(email string) (UserRow, error) {
+	var u UserRow
+	err := s.db.QueryRow(`SELECT id, email, password_hash FROM users WHERE email = ?`, email).Scan(&u.ID, &u.Email, &u.PasswordHash)
+	return u, err
+}
+
+// ---- user-scoped variants ----
+
+// ListAccountsForUser returns only the user's accounts.
+func (s *Store) ListAccountsForUser(userID string) ([]Account, error) {
+	rows, err := s.db.Query(`SELECT id, provider_id, label, created_at, last_synced_at
+		FROM accounts WHERE user_id = ? ORDER BY created_at`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Account
+	for rows.Next() {
+		var a Account
+		var created int64
+		var syncedNull any
+		if err := rows.Scan(&a.ID, &a.ProviderID, &a.Label, &created, &syncedNull); err != nil {
+			return nil, err
+		}
+		a.CreatedAt = time.Unix(created, 0).UTC()
+		if v, ok := syncedNull.(int64); ok {
+			tt := time.Unix(v, 0).UTC()
+			a.LastSyncedAt = &tt
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+// GetAccountForUser loads an account only when it belongs to the user.
+func (s *Store) GetAccountForUser(id, userID string) (AccountRow, error) {
+	var row AccountRow
+	var created int64
+	var synced any
+	err := s.db.QueryRow(
+		`SELECT id, provider_id, label, created_at, last_synced_at, auth_kind, secret_ref
+		 FROM accounts WHERE id = ? AND user_id = ?`, id, userID,
+	).Scan(&row.ID, &row.ProviderID, &row.Label, &created, &synced, &row.AuthKind, &row.SecretRef)
+	if err != nil {
+		return row, err
+	}
+	row.CreatedAt = time.Unix(created, 0).UTC()
+	if v, ok := synced.(int64); ok {
+		tt := time.Unix(v, 0).UTC()
+		row.LastSyncedAt = &tt
+	}
+	return row, nil
+}
+
+// AddAccountWithIDForUser records an account under an owner.
+func (s *Store) AddAccountWithIDForUser(id, userID, providerID, label, authKind, secretRef string) error {
+	_, err := s.db.Exec(
+		`INSERT INTO accounts (id, provider_id, label, auth_kind, secret_ref, created_at, user_id)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		id, providerID, label, authKind, secretRef, time.Now().Unix(), userID)
+	return err
+}
+
+// DeleteAccountForUser removes an account only for its owner.
+func (s *Store) DeleteAccountForUser(id, userID string) error {
+	_, err := s.db.Exec(`DELETE FROM accounts WHERE id = ? AND user_id = ?`, id, userID)
+	return err
+}
+
+// ListChildrenForUser scopes the unified view to one user's accounts.
+func (s *Store) ListChildrenForUser(parentRemoteID, accountID, userID string) ([]FileRow, error) {
+	q := `SELECT ` + fileCols + ` FROM files f
+		JOIN accounts a ON a.id = f.account_id AND a.user_id = ?
+		WHERE f.parent_remote_id = ?`
+	args := []any{userID, parentRemoteID}
+	if accountID != "" {
+		q += ` AND f.account_id = ?`
+		args = append(args, accountID)
+	}
+	q += ` ORDER BY f.is_dir DESC, f.name COLLATE NOCASE`
+	rows, err := s.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []FileRow
+	for rows.Next() {
+		r, err := scanFileRow(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// SearchFilesForUser scopes FTS results to one user.
+func (s *Store) SearchFilesForUser(query, userID string) ([]FileRow, error) {
+	rows, err := s.db.Query(`SELECT `+fileCols+` FROM files_fts
+		JOIN files f ON f.rowid = files_fts.rowid
+		JOIN accounts a ON a.id = f.account_id AND a.user_id = ?
+		WHERE files_fts MATCH ? ORDER BY rank LIMIT 200`, userID, query+"*")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []FileRow
+	for rows.Next() {
+		r, err := scanFileRow(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// GetFileForUser loads a file only through the user's own account.
+func (s *Store) GetFileForUser(id, userID string) (FileRow, error) {
+	return scanFileRow(s.db.QueryRow(`SELECT `+fileCols+` FROM files f
+		JOIN accounts a ON a.id = f.account_id AND a.user_id = ?
+		WHERE f.id = ?`, userID, id).Scan)
+}
+
+// Jobs and rules scoped by user.
+func (s *Store) AddJobForUser(userID, kind, fileName, srcAccount, srcRemoteID, dstAccount, dstProvider string, total int64) (string, error) {
+	id := newIDForFile()
+	_, err := s.db.Exec(`INSERT INTO jobs (id, kind, state, src_account_id, dst_account_id, src_path, dst_path, total_bytes, created_at, updated_at, user_id)
+		VALUES (?, ?, 'queued', ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, kind, srcAccount, dstAccount, srcRemoteID, fileName, total, time.Now().Unix(), time.Now().Unix(), userID)
+	return id, err
+}
+
+func (s *Store) ListJobsForUser(userID string, limit int) ([]JobRow, error) {
+	rows, err := s.db.Query(`SELECT j.id, j.kind, j.state, j.src_path, j.dst_path, j.src_account_id, j.dst_account_id,
+		COALESCE((SELECT a.provider_id FROM accounts a WHERE a.id = j.dst_account_id), ''), j.total_bytes, j.done_bytes, COALESCE(j.error, ''), j.created_at
+		FROM jobs j WHERE j.user_id = ? ORDER BY j.created_at DESC LIMIT ?`, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []JobRow
+	for rows.Next() {
+		var j JobRow
+		if err := rows.Scan(&j.ID, &j.Kind, &j.State, &j.SrcRemote, &j.FileName, &j.SrcAccount, &j.DstAccount, &j.DstProvider, &j.TotalBytes, &j.DoneBytes, &j.Error, &j.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, j)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) ListRulesForUser(userID string) ([]RuleRow, error) {
+	rows, err := s.db.Query(`SELECT id, priority, enabled, match_field, match_op, match_value, target FROM rules WHERE user_id = ? ORDER BY priority`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []RuleRow
+	for rows.Next() {
+		var r RuleRow
+		var en int
+		if err := rows.Scan(&r.ID, &r.Priority, &en, &r.Field, &r.Op, &r.Value, &r.Target); err != nil {
+			return nil, err
+		}
+		r.Enabled = en == 1
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) AddRuleForUser(userID string, priority int, enabled bool, field, op, value, target string) (string, error) {
+	id := newIDForFile()
+	en := 0
+	if enabled {
+		en = 1
+	}
+	_, err := s.db.Exec(`INSERT INTO rules (id, priority, enabled, match_field, match_op, match_value, target, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, priority, en, field, op, value, target, userID)
+	return id, err
+}
+
+func (s *Store) DeleteRuleForUser(id, userID string) error {
+	_, err := s.db.Exec(`DELETE FROM rules WHERE id = ? AND user_id = ?`, id, userID)
 	return err
 }

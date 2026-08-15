@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, filesApi } from "../api";
 import Modal from "./Modal";
+import { useT } from "../i18n";
 
 /** Placement rules editor: priority-ordered, first match wins. */
 export default function RulesDialog({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const qc = useQueryClient();
   const rules = useQuery({ queryKey: ["rules"], queryFn: filesApi.rules });
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: api.accounts });
@@ -26,11 +28,10 @@ export default function RulesDialog({ onClose }: { onClose: () => void }) {
   const accountName = (id: string) => accts.find((a) => a.id === id)?.label ?? id;
 
   return (
-    <Modal title="Upload rules" onClose={onClose}>
+    <Modal title={t("rulesTitle")} onClose={onClose}>
       <div className="space-y-4">
         <p className="text-sm text-slate-500">
-          New uploads match rules in priority order (lower number first); the
-          first match decides the cloud. No match → most free space.
+          {t("rulesDesc")}
         </p>
 
         {list.length > 0 && (

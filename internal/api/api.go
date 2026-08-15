@@ -9,10 +9,13 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/crypto/bcrypt"
 
+	"github.com/pleumcloud/pleumcloud/internal/auth"
 	"github.com/pleumcloud/pleumcloud/internal/index"
 	"github.com/pleumcloud/pleumcloud/internal/oauthflow"
 	"github.com/pleumcloud/pleumcloud/internal/provider"
@@ -22,17 +25,85 @@ import (
 
 // API bundles handler dependencies.
 type API struct {
-	store    *store.Store
-	secrets  secret.Store
-	oauth    *oauthflow.Manager
-	indexer  *index.Indexer
-	thumbDir string
-	version  string
+	store       *store.Store
+	secrets     secret.Store
+	oauth       *oauthflow.Manager
+	indexer     *index.Indexer
+	tokens      *auth.TokenKey
+	multiuser   bool
+	localUserID string
+	thumbDir    string
+	version     string
 }
 
 // New wires the API handlers.
-func New(st *store.Store, secrets secret.Store, oauth *oauthflow.Manager, idx *index.Indexer, version string) *API {
-	return &API{store: st, secrets: secrets, oauth: oauth, indexer: idx, version: version}
+func New(st *store.Store, secrets secret.Store, oauth *oauthflow.Manager, idx *index.Indexer, tokens *auth.TokenKey, multiuser bool, version string) *API {
+	return &API{store: st, secrets: secrets, oauth: oauth, indexer: idx, tokens: tokens, multiuser: multiuser, version: version}
+}
+
+// ---- authentication ----
+
+const cookieName = "pcu"
+
+type ctxKey int
+
+const userKey ctxKey = 1
+
+// InitLocalUser ensures the implicit local-mode owner exists.
+func (a *API) InitLocalUser() error {
+	id, err := a.store.EnsureUser("local", "")
+	if err != nil {
+		return err
+	}
+	a.localUserID = id
+	return nil
+}
+
+// ctxUser resolves the acting user. Local mode is always the implicit
+// local user; multiuser mode requires a valid cookie or Bearer token.
+func (a *API) ctxUser(r *http.Request) (string, error) {
+	if !a.multiuser {
+		return a.localUserID, nil
+	}
+	if tok := bearerToken(r); tok != "" {
+		if sub, err := a.tokens.Verify(tok); err == nil {
+			return sub, nil
+		}
+	}
+	if c, err := r.Cookie(cookieName); err == nil {
+		if sub, err := a.tokens.Verify(c.Value); err == nil {
+			return sub, nil
+		}
+	}
+	return "", fmt.Errorf("sign in required")
+}
+
+func bearerToken(r *http.Request) string {
+	h := r.Header.Get("Authorization")
+	return strings.TrimPrefix(h, "Bearer ")
+}
+
+// requireUser wraps handlers that need an acting user.
+func (a *API) requireUser(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, err := a.ctxUser(r)
+		if err != nil {
+			writeErr(w, http.StatusUnauthorized, err)
+			return
+		}
+		next(w, r.WithContext(context.WithValue(r.Context(), userKey, user)))
+	}
+}
+
+func userID(r *http.Request) string {
+	u, _ := r.Context().Value(userKey).(string)
+	return u
+}
+
+func (a *API) setSessionCookie(w http.ResponseWriter, tok string) {
+	http.SetCookie(w, &http.Cookie{
+		Name: cookieName, Value: tok, Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 30 * 24 * 3600,
+	})
 }
 
 // SetDataDir points the thumbnail cache at the data directory.
@@ -64,14 +135,22 @@ func (a *API) Routes() chi.Router {
 	r.Get("/health", a.health)
 	r.Get("/providers", a.providers)
 
-	r.Get("/accounts", a.accounts)
-	r.Post("/accounts", a.createAccount)
-	r.Delete("/accounts/{id}", a.deleteAccount)
+	// Auth surface (public).
+	r.Get("/auth/mode", a.authMode)
+	r.Post("/auth/register", a.register)
+	r.Post("/auth/login", a.login)
+	r.Post("/auth/logout", a.logout)
+	r.Get("/auth/me", a.requireUser(a.me))
+
+	// Everything below is user-scoped.
+	r.Get("/accounts", a.requireUser(a.accounts))
+	r.Post("/accounts", a.requireUser(a.createAccount))
+	r.Delete("/accounts/{id}", a.requireUser(a.deleteAccount))
 
 	r.Get("/credentials", a.credentials)
 	r.Put("/credentials/{provider}", a.putCredentials)
 
-	r.Get("/connect/{provider}/start", a.connectStart)
+	r.Get("/connect/{provider}/start", a.requireUser(a.connectStart))
 	r.Get("/connect/{provider}/callback", a.connectCallback)
 
 	// Unified file operations (browsing, transfer, placement, rules).
@@ -129,7 +208,7 @@ type accountReq struct {
 }
 
 func (a *API) accounts(w http.ResponseWriter, r *http.Request) {
-	accts, err := a.store.ListAccounts()
+	accts, err := a.store.ListAccountsForUser(userID(r))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -222,7 +301,7 @@ func (a *API) createAccount(w http.ResponseWriter, r *http.Request) {
 	if label == "" {
 		label = defaultLabel(req.ProviderID)
 	}
-	if err := a.store.AddAccountWithID(id, req.ProviderID, label, req.Method, ref); err != nil {
+	if err := a.store.AddAccountWithIDForUser(id, userID(r), req.ProviderID, label, req.Method, ref); err != nil {
 		a.secrets.Delete(ref)
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -241,17 +320,99 @@ func defaultLabel(providerID string) string {
 
 func (a *API) deleteAccount(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	row, err := a.store.GetAccount(id)
+	row, err := a.store.GetAccountForUser(id, userID(r))
 	if err != nil {
 		writeErr(w, http.StatusNotFound, errors.New("account not found"))
 		return
 	}
-	if err := a.store.DeleteAccount(id); err != nil {
+	if err := a.store.DeleteAccountForUser(id, userID(r)); err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
 	_ = a.secrets.Delete(row.SecretRef)
 	writeJSON(w, http.StatusOK, map[string]string{"deleted": id})
+}
+
+// ---- auth endpoints ----
+
+func (a *API) authMode(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"multiuser": a.multiuser})
+}
+
+func (a *API) register(w http.ResponseWriter, r *http.Request) {
+	if !a.multiuser {
+		writeErr(w, http.StatusForbidden, errors.New("registration is disabled in local mode"))
+		return
+	}
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := jsonDecode(r, &req); err != nil || req.Email == "" || len(req.Password) < 8 {
+		writeErr(w, http.StatusBadRequest, errors.New("email and a password of 8+ characters are required"))
+		return
+	}
+	if _, err := a.store.UserByEmail(strings.ToLower(req.Email)); err == nil {
+		writeErr(w, http.StatusConflict, errors.New("email already registered"))
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	id, err := a.store.EnsureUser(strings.ToLower(req.Email), string(hash))
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	a.issueSession(w, id, req.Email)
+}
+
+func (a *API) login(w http.ResponseWriter, r *http.Request) {
+	if !a.multiuser {
+		writeErr(w, http.StatusForbidden, errors.New("login is disabled in local mode"))
+		return
+	}
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := jsonDecode(r, &req); err != nil || req.Email == "" {
+		writeErr(w, http.StatusBadRequest, errors.New("email and password are required"))
+		return
+	}
+	u, err := a.store.UserByEmail(strings.ToLower(req.Email))
+	if err != nil {
+		time.Sleep(300 * time.Millisecond)
+		writeErr(w, http.StatusUnauthorized, errors.New("invalid credentials"))
+		return
+	}
+	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password)) != nil {
+		time.Sleep(300 * time.Millisecond)
+		writeErr(w, http.StatusUnauthorized, errors.New("invalid credentials"))
+		return
+	}
+	a.issueSession(w, u.ID, u.Email)
+}
+
+func (a *API) logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: "", Path: "/", MaxAge: -1})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (a *API) me(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"multiuser": a.multiuser})
+}
+
+func (a *API) issueSession(w http.ResponseWriter, id, email string) {
+	tok, err := a.tokens.Issue(id, 30*24*time.Hour)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	a.setSessionCookie(w, tok)
+	writeJSON(w, http.StatusOK, map[string]any{"email": email})
 }
 
 // ---- BYO OAuth credentials ----
@@ -361,7 +522,15 @@ func (a *API) connectCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := a.store.AddAccountWithID(acctID, id, label, "oauth2", ref); err != nil {
+	cbUser := a.localUserID
+	if a.multiuser {
+		if c, err := r.Cookie(cookieName); err == nil {
+			if sub, err := a.tokens.Verify(c.Value); err == nil {
+				cbUser = sub
+			}
+		}
+	}
+	if err := a.store.AddAccountWithIDForUser(acctID, cbUser, id, label, "oauth2", ref); err != nil {
 		a.secrets.Delete(ref)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "<h3>PleumCloud — could not save the account</h3><p>%s</p>", err)

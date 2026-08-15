@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, filesApi, fmtBytes, providerDot, type ProviderMeta } from "../api";
 import ProviderLogo from "./ProviderLogo";
 import RulesDialog from "./RulesDialog";
+import { useT } from "../i18n";
 
 interface SidebarProps {
   connectedCount: number;
@@ -10,6 +11,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
+  const t = useT();
   const [showRules, setShowRules] = useState(false);
   const providers = useQuery({
     queryKey: ["providers"],
@@ -28,24 +30,24 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
       </div>
 
       <nav className="px-3 py-2">
-        <NavButton icon="🗂️" label="All Drives" active />
-        <NavButton icon="🕘" label="Recent" disabled />
-        <NavButton icon="⭐" label="Starred" disabled />
-        <NavButton icon="🗑️" label="Trash" disabled />
+        <NavButton icon="🗂️" label={t("allDrives")} active />
+        <NavButton icon="🕘" label={t("recent")} disabled />
+        <NavButton icon="⭐" label={t("starred")} disabled />
+        <NavButton icon="🗑️" label={t("trash")} disabled />
       </nav>
 
       <div className="flex items-center justify-between px-5 pt-2">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Settings</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t("settings")}</span>
         <button
           onClick={() => setShowRules(true)}
           className="text-xs font-semibold text-blue-600 hover:underline"
         >
-          upload rules
+          {t("uploadRules")}
         </button>
       </div>
 
       <div className="mt-2 px-5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-        Clouds ({connectedCount})
+        {t("clouds")} ({connectedCount})
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
         {connected.map((a) => (
@@ -76,7 +78,7 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
           <span className="grid size-7 place-items-center rounded-full bg-blue-100 text-base leading-none">
             +
           </span>
-          Connect a cloud
+          {t("connectCloud")}
         </button>
       </div>
 
@@ -115,6 +117,7 @@ function NavButton({
 }
 
 function QuotaRibbon({ providers }: { providers: ProviderMeta[] }) {
+  const t = useT();
   const usage = useQuery({ queryKey: ["usage"], queryFn: filesApi.usage, refetchInterval: 60_000 });
   const entries = usage.data?.usage ?? [];
   if (entries.length === 0) {
@@ -138,7 +141,7 @@ function QuotaRibbon({ providers }: { providers: ProviderMeta[] }) {
   return (
     <div className="border-t border-slate-200 p-4">
       <div className="mb-1.5 flex justify-between text-xs text-slate-500">
-        <span className="font-semibold text-slate-700">{fmtBytes(totUsed)} used</span>
+        <span className="font-semibold text-slate-700">{fmtBytes(totUsed)} {t("used")}</span>
         <span>of {fmtBytes(totAll)}</span>
       </div>
       <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-slate-100">
