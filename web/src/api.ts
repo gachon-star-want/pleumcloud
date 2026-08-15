@@ -66,6 +66,11 @@ export const api = {
       providerId, method: "pat", token, label, username,
     }),
 
+  connectMediaFire: (email: string, password: string, appId: string, apiKey: string) =>
+    send<{ id: string; label: string }>("/api/accounts", "POST", {
+      providerId: "mediafire", method: "mediafire", username: email, password, appId, apiKey,
+    }),
+
   connectWebDAV: (url: string, username: string, password: string, label?: string) =>
     send<{ id: string; label: string }>("/api/accounts", "POST", {
       providerId: "webdav", method: "webdav", url, username, password, label,

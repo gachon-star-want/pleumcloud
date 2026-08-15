@@ -113,12 +113,14 @@ func (a *API) providers(w http.ResponseWriter, r *http.Request) {
 
 type accountReq struct {
 	ProviderID string `json:"providerId"`
-	Method     string `json:"method"` // pat | webdav
+	Method     string `json:"method"` // pat | webdav | mediafire
 	Token      string `json:"token"`  // pat
 	URL        string `json:"url"`    // webdav
 	Username   string `json:"username"`
 	Password   string `json:"password"`
 	Label      string `json:"label"`
+	AppID      string `json:"appId"`  // mediafire
+	APIKey     string `json:"apiKey"` // mediafire
 }
 
 func (a *API) accounts(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +156,17 @@ func (a *API) createAccount(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := secret.PutJSON(a.secrets, ref, map[string]string{"pat": req.Token, "email": req.Username}); err != nil {
+			writeErr(w, http.StatusInternalServerError, err)
+			return
+		}
+	case "mediafire":
+		if req.Username == "" || req.Password == "" || req.AppID == "" || req.APIKey == "" {
+			writeErr(w, http.StatusBadRequest, errors.New("email, password, app id and api key are required"))
+			return
+		}
+		if err := secret.PutJSON(a.secrets, ref, map[string]string{
+			"email": req.Username, "password": req.Password, "appId": req.AppID, "apiKey": req.APIKey,
+		}); err != nil {
 			writeErr(w, http.StatusInternalServerError, err)
 			return
 		}

@@ -8,6 +8,7 @@ type Dialog =
   | { kind: "pat"; provider: ProviderMeta }
   | { kind: "webdav" }
   | { kind: "creds"; provider: ProviderMeta }
+  | { kind: "mediafire" }
   | null;
 
 export default function ConnectPanel() {
@@ -135,6 +136,7 @@ export default function ConnectPanel() {
         />
       )}
       {dialog?.kind === "webdav" && <WebDAVDialog onClose={() => setDialog(null)} />}
+      {dialog?.kind === "mediafire" && <MediaFireDialog onClose={() => setDialog(null)} />}
       {dialog?.kind === "creds" && (
         <CredsDialog provider={dialog.provider} onClose={() => setDialog(null)} />
       )}
@@ -381,6 +383,56 @@ function CredsDialog({
             {save.isPending ? "Saving…" : "Save"}
           </button>
         )}
+      </div>
+    </Modal>
+  );
+}
+
+
+function MediaFireDialog({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ email: "", password: "", appId: "", apiKey: "" });
+  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.connectMediaFire(form.email.trim(), form.password, form.appId.trim(), form.apiKey.trim()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+      onClose();
+    },
+    onError: (e: Error) => setError(e.message),
+  });
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const ready = form.email.trim() && form.password && form.appId.trim() && form.apiKey.trim();
+
+  return (
+    <Modal title="Connect MediaFire" onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">
+          Create a free app in MediaFire Account Settings → Developers, then paste
+          its credentials here.{" "}
+          <a
+            href="https://www.mediafire.com/developers/"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-blue-600 hover:underline"
+          >
+            Developer docs ↗
+          </a>
+        </p>
+        <Field label="Account email" type="email" value={form.email} onChange={set("email")} autoFocus />
+        <Field label="Password" type="password" value={form.password} onChange={set("password")} />
+        <Field label="Application ID" value={form.appId} onChange={set("appId")} />
+        <Field label="API key" type="password" value={form.apiKey} onChange={set("apiKey")} />
+        <ErrBanner error={error} />
+        <button
+          disabled={!ready || mutation.isPending}
+          onClick={() => mutation.mutate()}
+          className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {mutation.isPending ? "Connecting…" : "Connect"}
+        </button>
       </div>
     </Modal>
   );
