@@ -8,8 +8,7 @@ before:
     # The embedded SPA must be built once before the Go binary embeds it.
     # Runs here, not as a per-build pre hook: goreleaser builds targets in
     # parallel and concurrent `npm ci` in the same dir races on rmdir.
-    - cmd: bash -c "cd web && npm ci && npm run build"
-      output: true
+    - bash -c "cd web && npm ci && npm run build"
 
 builds:
   - env:
