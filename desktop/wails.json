@@ -1,0 +1,15 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "PleumCloud",
+  "outputfilename": "PleumCloud",
+  "assetdir": "./frontend",
+  "frontend:dir": "frontend",
+  "frontend:install": "",
+  "frontend:build": "",
+  "info": {
+    "productName": "PleumCloud",
+    "productVersion": "0.4.0",
+    "copyright": "Copyright © 2026 PleumCloud contributors",
+    "comments": "All your free cloud storage, one drive."
+  }
+}

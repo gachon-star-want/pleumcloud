@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type ProviderMeta } from "../api";
+import { api, openExternal, type ProviderMeta } from "../api";
 import ProviderLogo from "./ProviderLogo";
 import Modal from "./Modal";
 import { useT } from "../i18n";
@@ -11,6 +11,15 @@ type Dialog =
   | { kind: "creds"; provider: ProviderMeta }
   | { kind: "mediafire" }
   | null;
+
+// In the desktop shell the consent page opens in the system browser
+// (embedded webviews are blocked by Google et al.); the web app navigates.
+function startOAuth(providerId: string) {
+  const url = `/api/connect/${providerId}/start`;
+  void openExternal(url).then((opened) => {
+    if (!opened) window.location.href = url;
+  });
+}
 
 export default function ConnectPanel() {
   const t = useT();
@@ -44,7 +53,7 @@ export default function ConnectPanel() {
         if (!c?.configured) {
           setDialog({ kind: "creds", provider: p });
         } else {
-          window.location.href = `/api/connect/${p.id}/start`;
+          void startOAuth(p.id);
         }
         return;
       }
@@ -413,7 +422,7 @@ function CredsDialog({
         <ErrBanner error={error} />
         {saved ? (
           <button
-            onClick={() => (window.location.href = `/api/connect/${provider.id}/start`)}
+            onClick={() => startOAuth(provider.id)}
             className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
           >
             Continue to {provider.name}

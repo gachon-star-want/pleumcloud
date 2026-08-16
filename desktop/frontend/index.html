@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PleumCloud</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b1220; color: #e5e7eb;
+      font-family: system-ui, -apple-system, sans-serif; display: grid; place-items: center; }
+    .card { max-width: 540px; padding: 2rem; text-align: center; }
+    h1 { font-size: 1.05rem; font-weight: 600; margin: 1rem 0 .5rem; }
+    p { color: #9ca3af; font-size: .88rem; line-height: 1.55; word-break: break-word; }
+    .spin { width: 28px; height: 28px; margin: 0 auto; border-radius: 50%;
+      border: 3px solid #1f2a44; border-top-color: #60a5fa; animation: r 0.9s linear infinite; }
+    @keyframes r { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spin" id="spin"></div>
+    <h1>Starting PleumCloud…</h1>
+    <p id="msg">Connecting to your local cloud.</p>
+  </div>
+  <script>
+    (function () {
+      function fail(msg) {
+        document.getElementById("spin").style.display = "none";
+        document.getElementById("msg").textContent = msg;
+      }
+      var tries = 0;
+      (function go() {
+        var shell = window.go && window.go.main && window.go.main.Shell;
+        if (!shell) {
+          if (++tries > 200) return fail("The desktop shell did not initialise.");
+          return setTimeout(go, 50);
+        }
+        shell.Err().then(function (err) {
+          if (err) return fail(err);
+          shell.URL().then(function (u) {
+            if (!u) return fail("The local server reported no URL.");
+            window.location.replace(u);
+          });
+        }).catch(function (e) { fail(String(e)); });
+      })();
+    })();
+  </script>
+</body>
+</html>

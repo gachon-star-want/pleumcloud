@@ -210,3 +210,17 @@ export function inlineURL(id: string): string {
 export function thumbURL(id: string, size = 384): string {
   return `/api/file/${id}/thumb?size=${size}`;
 }
+
+// Ask the desktop shell to open a URL in the system browser; returns false
+// on the plain web app (no such endpoint). The shell needs this because
+// OAuth consent must not render in the embedded webview (Google blocks it)
+// and WKWebView cannot save file downloads.
+export async function openExternal(url: string): Promise<boolean> {
+  try {
+    const abs = new URL(url, window.location.href).toString();
+    const r = await fetch("/__desktop/external", { method: "POST", body: abs });
+    return r.status === 204;
+  } catch {
+    return false;
+  }
+}

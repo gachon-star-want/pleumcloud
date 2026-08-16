@@ -8,6 +8,10 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
+// In the desktop shell OAuth completes in the system browser; refetch when
+// the webview regains focus so newly connected accounts appear.
+window.addEventListener("focus", () => queryClient.invalidateQueries());
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
