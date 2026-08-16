@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -100,6 +101,49 @@ func TestStartServesAPIAndUI(t *testing.T) {
 	code, body = get(t, a.URL+"/")
 	if code != http.StatusOK || len(body) == 0 {
 		t.Fatalf("SPA shell = %d/%d bytes, want 200 and non-empty", code, len(body))
+	}
+}
+
+// Middleware lets embedders wrap the HTTP handler — the desktop shell
+// intercepts a desktop-only endpoint and must not break the core routes.
+func TestStartMiddlewareWrapsHandler(t *testing.T) {
+	cfg := localCfg(t)
+	mw := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/__desktop/external" {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			w.Header().Set("X-Pleum-Wrapped", "1")
+			next.ServeHTTP(w, r)
+		})
+	}
+	a, err := app.Start(app.Options{Config: cfg, Middleware: mw})
+	if err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	defer a.Close()
+
+	resp, err := http.Post(a.URL+"/__desktop/external", "text/plain", strings.NewReader("http://x"))
+	if err != nil {
+		t.Fatalf("POST intercepted endpoint: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("intercepted endpoint = %d, want 204", resp.StatusCode)
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err = client.Get(a.URL + "/api/health")
+	if err != nil {
+		t.Fatalf("GET /api/health: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("/api/health through middleware = %d, want 200", resp.StatusCode)
+	}
+	if got := resp.Header.Get("X-Pleum-Wrapped"); got != "1" {
+		t.Fatalf("middleware must wrap core routes, X-Pleum-Wrapped=%q", got)
 	}
 }
 

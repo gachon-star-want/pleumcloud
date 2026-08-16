@@ -48,6 +48,10 @@ type Options struct {
 	// Config overrides environment-derived configuration. Used by tests
 	// and embedders that own their own settings surface.
 	Config *config.Config
+	// Middleware optionally wraps the HTTP handler. The desktop shell uses
+	// it to serve desktop-only endpoints (e.g. open-in-system-browser)
+	// next to the core routes. Nil keeps the handler unwrapped.
+	Middleware func(http.Handler) http.Handler
 }
 
 // App is a running PleumCloud core: HTTP server plus background workers.
@@ -147,7 +151,11 @@ func Start(opts Options) (*App, error) {
 		return nil, fmt.Errorf("listen: %w", err)
 	}
 
-	a.httpSrv = &http.Server{Handler: server.New(cfg, restAPI).Handler()}
+	handler := server.New(cfg, restAPI).Handler()
+	if opts.Middleware != nil {
+		handler = opts.Middleware(handler)
+	}
+	a.httpSrv = &http.Server{Handler: handler}
 	go func() { _ = a.httpSrv.Serve(ln) }()
 
 	a.Addr = ln.Addr().String()
