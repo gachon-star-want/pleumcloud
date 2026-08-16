@@ -164,14 +164,28 @@ func toFile(r mbResource) provider.File {
 	}
 }
 
-// mimeFor derives a MIME type: the file extension first, then the API's
-// category as a coarse fallback (HEIC files are why the fallback exists —
-// few systems resolve .heic from their mime tables).
+// pinnedMIME keeps the HEIC family identical on every OS: system mime
+// tables disagree (macOS resolves .heic to image/heic, some Linux tables
+// to image/heif, most none at all) and gallery filtering plus preview
+// transcoding key off this value.
+var pinnedMIME = map[string]string{
+	".heic": "image/heic",
+	".heif": "image/heic",
+	".hif":  "image/heic",
+}
+
+// mimeFor derives a MIME type: a pinned table for the HEIC family first,
+// then the file extension, then the API's category as a coarse fallback
+// (HEIC files are why the fallback exists — few systems resolve .heic
+// from their mime tables).
 func mimeFor(r mbResource) string {
 	if strings.Contains(strings.ToLower(r.Type), "folder") {
 		return ""
 	}
 	ext := strings.ToLower(filepath.Ext(r.Name))
+	if m, ok := pinnedMIME[ext]; ok {
+		return m
+	}
 	if m := mime.TypeByExtension(ext); m != "" {
 		return m
 	}
