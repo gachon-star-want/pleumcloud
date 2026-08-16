@@ -5,6 +5,11 @@ project_name: pleumcloud
 before:
   hooks:
     - go mod tidy
+    # The embedded SPA must be built once before the Go binary embeds it.
+    # Runs here, not as a per-build pre hook: goreleaser builds targets in
+    # parallel and concurrent `npm ci` in the same dir races on rmdir.
+    - cmd: bash -c "cd web && npm ci && npm run build"
+      output: true
 
 builds:
   - env:
@@ -18,11 +23,6 @@ builds:
       - arm64
     ldflags:
       - -s -w -X main.version={{.Version}}
-    # The embedded SPA must be built before the Go binary embeds it.
-    hooks:
-      pre:
-        - cmd: bash -c "cd web && npm ci && npm run build"
-          output: true
 
 archives:
   - formats: [tar.gz]
