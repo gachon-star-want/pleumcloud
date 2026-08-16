@@ -51,6 +51,23 @@ const dict: Record<string, [string, string]> = {
   transferDesc: ["Connect another cloud to transfer between them.", "클라우드 간 전송을 위해 다른 클라우드를 연결하세요."],
   runsInBackground: ["runs in background", "백그라운드에서 실행"],
   copy: ["Copy", "복사"],
+  // Lightbox preview
+  fit: ["Fit", "맞춤"],
+  actualSize: ["Actual size", "실제 크기"],
+  download: ["Download", "다운로드"],
+  openOriginal: ["Open original in a new tab", "새 탭에서 원본 열기"],
+  close: ["Close", "닫기"],
+  noPreview: ["No inline preview for this type.", "이 형식은 인라인 미리보기를 지원하지 않습니다."],
+  downloadInstead: ["Download instead", "대신 다운로드"],
+  preparingPreview: ["Preparing preview…", "미리보기 준비 중…"],
+  // Connect UI
+  cloudConnected: ["connected", "연결됨"],
+  openTokenPage: ["Create a token at {name} ↗", "{name} 사이트에서 토큰 만들기 ↗"],
+  tokenStepsDrime: ["Log in, then open Settings → Developer and create an API token.", "로그인 후 설정 → Developer(개발자)에서 API 토큰을 만드세요."],
+  tokenStepsMybox: ["Create a personal access token (mbx_pat_…) in the MyBox developer portal.", "MyBox 개발자 포털에서 개인 액세스 토큰(mbx_pat_…)을 발급받으세요."],
+  tokenStepsKoofr: ["Open Settings → API tokens and generate a new token.", "설정 → API 토큰에서 새 토큰을 생성하세요."],
+  invalidGdriveId: ["Google Client IDs look like 1234-abc.apps.googleusercontent.com — copy it exactly from Google Cloud Console → APIs & Services → Credentials.", "구글 Client ID는 1234-abc.apps.googleusercontent.com 형태입니다. Google Cloud Console → API 및 서비스 → 사용자 인증 정보에서 정확히 복사해서 붙여넣어 주세요."],
+  byoGuide: ["Step-by-step guide ↗", "단계별 가이드 ↗"],
 };
 
 const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: "en", setLang: () => {} });
