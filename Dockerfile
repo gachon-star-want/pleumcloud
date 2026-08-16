@@ -13,7 +13,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web /src/web/dist /src/web/dist
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/pleumcloud .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /out/pleumcloud ./cmd/web
 
 # ---- runtime ----
 FROM alpine:3.20

@@ -11,7 +11,8 @@ before:
     - bash -c "cd web && npm ci && npm run build"
 
 builds:
-  - env:
+  - main: ./cmd/web
+    env:
       - CGO_ENABLED=0
     goos:
       - darwin
