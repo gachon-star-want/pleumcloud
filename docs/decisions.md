@@ -65,22 +65,30 @@ without it.
 **Rejected.** rclone-only (no unified search index, no placement rules, no
 embedded auth UI).
 
-### D5 — OAuth with no embedded secrets: bring your own app
+### D5 — Official OAuth apps first, BYO fallback (revised 2026-08-17)
 
-**Decision.** The OAuth flow ships with zero embedded client secrets.
-Users register their own (free) app keys once —
-[docs/oauth-setup.md](oauth-setup.md) walks through each provider's
-console.
+**Decision.** PleumCloud ships the project's official OAuth apps as public
+client IDs/secrets (the rclone model) so connecting a cloud is one click
+with zero setup: the provider's own sign-in page opens, you approve, done.
+Users may still bring their own app key per provider (it wins over the
+built-in one), and self-host/server deployments inject their own via
+`PLEUMCLOUD_OAUTH_<PROVIDER>_CLIENT_ID`/`_CLIENT_SECRET`. Token-only
+providers (MyBox, Drime, Koofr) deep-link to the provider's token-creation
+page — PleumCloud never asks for a cloud account password.
 
-**Why.** OAuth verification for a small open-source project is slow and
-expensive (e.g. Google's verification/CASA process caps unverified apps at
-100 users). With BYO keys, every user is their own app owner: no shared
-quota, no verification wall, and the repository holds nothing worth
-stealing.
+**Why.** The original no-secrets policy put a developer-console chore in
+front of every new user and the paste-key modal read as "this app wants my
+credentials" — provider-site login is the expected UX (GitHub↔Claude
+style). A local-first binary cannot keep a client secret confidential
+anyway; the real protections are PKCE (S256, enabled for
+gdrive/onedrive/dropbox) and the redirect URIs each registered app is
+locked to.
 
-**Rejected.** Hardcoded shared app credentials (verification walls, secret
-leakage risk); mandatory manual token pasting for OAuth providers (bad
-first-run experience — BYO keys still give one-click connects afterwards).
+**Rejected.** Zero embedded secrets, BYO only (original 2026-08-14
+decision — chosen to dodge verification walls like Google's testing-mode
+100-user cap and Dropbox's dev-app limits; those caps are accepted now and
+lifted per-provider as approvals land); mandatory manual token pasting for
+OAuth providers.
 
 ### D6 — Credentials in the OS keychain, metadata in SQLite
 

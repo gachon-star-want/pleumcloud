@@ -114,9 +114,11 @@ cd pleumcloud && make build && ./pleumcloud
 | Server | `PLEUMCLOUD_SERVER=1 PLEUMCLOUD_PASSWORD=… pleumcloud` | You, from anywhere — one shared password |
 | Multi-user | `PLEUMCLOUD_MULTIUSER=1` (see compose) | Family/team — email sign-up, per-user data isolation |
 
-**First OAuth connection?** Grab a free app key once using
+**First OAuth connection?** Until the project's official OAuth apps finish
+registration, grab a free app key once using
 [docs/oauth-setup.md](docs/oauth-setup.md) (10 minutes, one-time per
-machine) — after that every connect is a single click.
+machine) — after that every connect is a single click. Token-based clouds
+(MyBox, Drime, Koofr) link you straight to their token pages.
 
 ## How it works
 

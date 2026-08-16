@@ -1,9 +1,27 @@
 # OAuth setup guide
 
 PleumCloud connects to Google Drive, OneDrive, Dropbox and pCloud with
-one-click OAuth. Until the project's official OAuth apps are approved,
-paste your own app credentials once — after that, every connect on this
-machine is one click.
+one-click OAuth: the provider's own sign-in page opens and PleumCloud never
+asks for your cloud account password.
+
+## Which app key gets used
+
+The OAuth client is resolved in this order:
+
+1. **Your own app** (BYO) — pasted once per machine if you've set one; it
+   wins over everything. See the per-provider guides below.
+2. **The project's official app** — compiled into the binary
+   (`internal/oauthflow/defaults.go`). When present, connects are one
+   click with zero setup.
+3. Server/self-host deployments can override either level with
+   `PLEUMCLOUD_OAUTH_<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET`
+   (e.g. `PLEUMCLOUD_OAUTH_GDRIVE_CLIENT_ID=… pleumcloud`).
+
+The official apps ship as **public client IDs** (rclone-style): a
+local-first binary cannot keep a secret confidential anyway, every flow
+uses PKCE (S256), and each app is locked to its registered redirect URIs.
+The same guides below serve both users pasting their own key and the
+project registering an official app.
 
 ## Google Drive (15 GB free)
 
