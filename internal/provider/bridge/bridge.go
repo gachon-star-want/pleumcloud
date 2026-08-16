@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/secret"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/secret"
 )
 
 func init() {

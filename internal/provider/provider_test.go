@@ -3,11 +3,11 @@ package provider_test
 import (
 	"testing"
 
-	"github.com/pleumcloud/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
 
 	// Connectors self-register into the provider registry.
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/mybox"
+	_ "github.com/gachon-star-want/pleumcloud/internal/provider/gdrive"
+	_ "github.com/gachon-star-want/pleumcloud/internal/provider/mybox"
 )
 
 // A nil secret store must fail the build instead of producing a connector

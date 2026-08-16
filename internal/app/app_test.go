@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pleumcloud/pleumcloud/internal/app"
-	"github.com/pleumcloud/pleumcloud/internal/config"
+	"github.com/gachon-star-want/pleumcloud/internal/app"
+	"github.com/gachon-star-want/pleumcloud/internal/config"
 )
 
 // localCfg builds a fresh loopback-only config over a temp data dir.

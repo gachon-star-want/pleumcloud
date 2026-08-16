@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/store"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/store"
 )
 
 // fakeConn is a scripted connector for indexer tests.

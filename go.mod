@@ -1,4 +1,4 @@
-module github.com/pleumcloud/pleumcloud
+module github.com/gachon-star-want/pleumcloud
 
 go 1.26.5
 

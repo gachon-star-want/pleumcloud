@@ -18,9 +18,9 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/pleumcloud/pleumcloud/internal/oauthflow"
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/secret"
+	"github.com/gachon-star-want/pleumcloud/internal/oauthflow"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/secret"
 )
 
 // apiBase is a var so tests can point it at a fake server. EU accounts

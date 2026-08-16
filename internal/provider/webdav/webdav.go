@@ -15,8 +15,8 @@ import (
 
 	"github.com/studio-b12/gowebdav"
 
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/secret"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/secret"
 )
 
 func init() {

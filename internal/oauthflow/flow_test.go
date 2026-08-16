@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/pleumcloud/pleumcloud/internal/secret"
+	"github.com/gachon-star-want/pleumcloud/internal/secret"
 )
 
 type memSecret map[string][]byte

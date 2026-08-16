@@ -28,9 +28,9 @@ import (
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 
-	"github.com/pleumcloud/pleumcloud/internal/placement"
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/store"
+	"github.com/gachon-star-want/pleumcloud/internal/placement"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/store"
 )
 
 type (

@@ -15,7 +15,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pleumcloud/pleumcloud/internal/secret"
+	"github.com/gachon-star-want/pleumcloud/internal/secret"
 )
 
 // AuthKind identifies how a provider authenticates.

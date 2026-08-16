@@ -18,7 +18,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/pleumcloud/pleumcloud/internal/secret"
+	"github.com/gachon-star-want/pleumcloud/internal/secret"
 )
 
 // ErrNoClientID is returned when neither a built-in nor a BYO client is

@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/store"
+	"github.com/gachon-star-want/pleumcloud/internal/provider"
+	"github.com/gachon-star-want/pleumcloud/internal/store"
 )
 
 // Indexer applies connector change feeds to the store.

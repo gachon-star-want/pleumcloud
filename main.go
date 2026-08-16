@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pleumcloud/pleumcloud/internal/app"
-	"github.com/pleumcloud/pleumcloud/internal/browser"
-	"github.com/pleumcloud/pleumcloud/internal/ui"
+	"github.com/gachon-star-want/pleumcloud/internal/app"
+	"github.com/gachon-star-want/pleumcloud/internal/browser"
+	"github.com/gachon-star-want/pleumcloud/internal/ui"
 )
 
 // version is set at build time via -ldflags "-X main.version=..."
