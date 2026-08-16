@@ -195,6 +195,40 @@ phase becomes shell + packaging only.
 a closed desktop edition (contradicts the AGPL core and re-creates the
 two-codebase problem D11 closed).
 
+### D13 — Desktop shell: loopback embedding, lean MVP, unsigned first
+
+*(Decided 2026-08-17. Implements D12's desktop phase.)*
+
+**Decision.** Three calls for the Wails v2 shell:
+
+- **(a) Architecture — loopback.** The shell calls `app.Start` with
+  `Port 7777` on `127.0.0.1` and the webview loads that URL. The web
+  app's runtime path (OAuth `r.Host` redirect URIs, cookies, streaming
+  downloads) stays byte-identical to the web binary. OAuth consent pages
+  open in the system browser (Google blocks embedded webviews).
+- **(b) MVP scope.** Single window + single-instance lock, close
+  confirmation while transfers are active, app name/icon, manual update
+  banner (GitHub Releases comparison). Tray, OS auto-start, and
+  auto-update are deferred to v0.4+ (Wails v2 has no native tray).
+- **(c) Distribution — unsigned first.** Ship unsigned (dmg + NSIS),
+  mitigated by a Homebrew cask (curl downloads carry no quarantine
+  attribute) and install docs. The release pipeline is signing-ready:
+  notarization/code-signing activates when secrets are registered.
+  Revisit before the October launch.
+
+**Why.** The alternative — mounting `server.Handler()` on Wails' asset
+handler — breaks `r.Host`-based OAuth redirects, needs a separate
+loopback listener for callbacks anyway, and forks the runtime path into
+desktop-only variants. Loopback reuses everything (JupyterLab Desktop
+precedent). Signing costs money before any users exist; unsigned plus
+brew gets 90% of the UX for free and the pipeline can turn signing on
+later without a rebuild.
+
+**Rejected.** Wails asset-handler mounting (OAuth/callback breakage,
+dual code paths); custom URL scheme (would force re-registering every
+provider console); tray/auto-start in v1 (v2 unsupported, third-party
+fork risk); buying certificates now (revisited pre-launch).
+
 ## Provider matrix
 
 Inclusion criteria: **official third-party API + meaningful free tier +
