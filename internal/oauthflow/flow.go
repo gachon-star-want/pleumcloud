@@ -45,17 +45,20 @@ var Specs = map[string]Spec{
 		AuthURL:           "https://accounts.google.com/o/oauth2/v2/auth",
 		TokenURL:          "https://oauth2.googleapis.com/token",
 		Scopes:            []string{"https://www.googleapis.com/auth/drive"},
+		UsePKCE:           true,
 		AccessTypeOffline: true,
 	},
 	"onedrive": {
 		AuthURL:  "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize",
 		TokenURL: "https://login.microsoftonline.com/consumers/oauth2/v2.0/token",
 		Scopes:   []string{"Files.ReadWrite.All", "offline_access", "User.Read"},
+		UsePKCE:  true,
 	},
 	"dropbox": {
 		AuthURL:  "https://www.dropbox.com/oauth2/authorize",
 		TokenURL: "https://api.dropboxapi.com/oauth2/token",
 		Scopes:   []string{"files.content.write", "files.content.read", "files.metadata.read", "account_info.read"},
+		UsePKCE:  true,
 		// Dropbox needs token_access_type=offline for refresh tokens and
 		// its own account picker.
 		ExtraAuthParams: url.Values{"token_access_type": {"offline"}},
@@ -97,7 +100,7 @@ type pendingFlow struct {
 func NewManager(secrets secret.Store) *Manager {
 	return &Manager{
 		secrets: secrets,
-		builtin: map[string]ClientID{},
+		builtin: BuiltinApps(),
 		byo:     map[string]ClientID{},
 		pending: map[string]pendingFlow{},
 	}
@@ -107,6 +110,19 @@ func NewManager(secrets secret.Store) *Manager {
 func (m *Manager) SetBYO(provider string, c ClientID) {
 	m.byoMu.Lock()
 	m.byo[provider] = c
+	m.byoMu.Unlock()
+}
+
+// SetBuiltin overrides the compiled official apps (NewManager already
+// applies env overrides). Entries with an empty ID are ignored so a
+// half-configured map can't wipe a good app. BYO credentials still win.
+func (m *Manager) SetBuiltin(apps map[string]ClientID) {
+	m.byoMu.Lock()
+	for id, c := range apps {
+		if c.ID != "" {
+			m.builtin[id] = c
+		}
+	}
 	m.byoMu.Unlock()
 }
 

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -474,6 +475,29 @@ func (a *API) putCredentials(w http.ResponseWriter, r *http.Request) {
 
 // ---- OAuth loopback ----
 
+// connectErrorPage renders a small readable error page for browser-facing
+// OAuth failures (the SPA's i18n never reaches these round-trip pages, so
+// guidance ships bilingually). Provider-sourced text is escaped.
+func connectErrorPage(w http.ResponseWriter, status int, title string, provider string, err error) {
+	hint := ""
+	msg := html.EscapeString(err.Error())
+	switch {
+	case strings.Contains(msg, "invalid_client"):
+		hint = fmt.Sprintf("The OAuth client ID/secret was rejected by %s. If you pasted your own app key, re-copy it exactly from the provider console — docs/oauth-setup.md has the guide.<br>클라이언트 ID/시크릿이 %s에서 거부되었습니다. 직접 붙여넣은 앱 키라면 콘솔에서 정확히 다시 복사해 주세요 (안내: docs/oauth-setup.md).", provider, provider)
+	case strings.Contains(msg, "access_denied"):
+		hint = "The sign-in was cancelled at the provider.<br>제공사 화면에서 로그인이 취소되었습니다."
+	case strings.Contains(msg, "unknown or expired OAuth state"):
+		hint = "The sign-in window expired (10 minutes) — start the connection again.<br>로그인 세션이 만료되었습니다(10분). 연결을 다시 시작해 주세요."
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	fmt.Fprintf(w, `<!doctype html><meta charset="utf-8"><title>%s</title>
+<body style="font-family:system-ui,sans-serif;padding:3rem;max-width:40rem;margin:auto">
+<h3>%s</h3><p>%s</p>%s
+<p><a href="/connect">Try again / 다시 시도</a> · <a href="/">Back to PleumCloud</a></p></body>`,
+		html.EscapeString(title), html.EscapeString(title), msg, hint)
+}
+
 func (a *API) connectStart(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "provider")
 	scheme := "http"
@@ -484,8 +508,7 @@ func (a *API) connectStart(w http.ResponseWriter, r *http.Request) {
 	authURL, err := a.oauth.Start(id, redirectBase)
 	if err != nil {
 		// Browser-facing: a small readable error beats JSON here.
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "<h3>PleumCloud — can't start %s connection</h3><p>%s</p><p><a href='/'>Back</a></p>", id, err)
+		connectErrorPage(w, http.StatusBadRequest, "PleumCloud — can't start "+id+" connection", id, err)
 		return
 	}
 	http.Redirect(w, r, authURL, http.StatusFound)
@@ -494,8 +517,7 @@ func (a *API) connectStart(w http.ResponseWriter, r *http.Request) {
 func (a *API) connectCallback(w http.ResponseWriter, r *http.Request) {
 	id, tok, err := a.oauth.Complete(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		fmt.Fprintf(w, "<h3>PleumCloud — connection failed</h3><p>%s</p><p><a href='/connect'>Try again</a> · <a href='/'>Back</a></p>", err)
+		connectErrorPage(w, http.StatusBadGateway, "PleumCloud — connection failed", id, err)
 		return
 	}
 

@@ -98,6 +98,7 @@ func TestStartCompleteRoundTrip(t *testing.T) {
 
 // TestMissingClientID verifies the setup guidance error.
 func TestMissingClientID(t *testing.T) {
+	unsetBuiltinEnv(t)
 	m := NewManager(memSecret{})
 	if _, err := m.Start("gdrive", "http://127.0.0.1:7777"); err != ErrNoClientID {
 		t.Fatalf("err = %v", err)

@@ -44,6 +44,9 @@ type Metadata struct {
 	Tier       Tier     `json:"tier"`
 	FreeTierGB int      `json:"freeTierGB"`
 	DocsURL    string   `json:"docsUrl,omitempty"`
+	// TokenURL, for PAT providers, deep-links straight to the provider's
+	// token-creation page so users never hunt through settings.
+	TokenURL string `json:"tokenUrl,omitempty"`
 	// MaxUploadBytes is the largest single file the free tier accepts
 	// (0 = unknown or unlimited).
 	MaxUploadBytes int64 `json:"maxUploadBytes,omitempty"`
