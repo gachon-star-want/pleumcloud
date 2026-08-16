@@ -147,6 +147,27 @@ func TestStartMiddlewareWrapsHandler(t *testing.T) {
 	}
 }
 
+// The unauthenticated local default must refuse foreign Host headers, or a
+// malicious site could DNS-rebind its domain to loopback and drive the API.
+func TestLocalModeRejectsForeignHost(t *testing.T) {
+	a := startLocal(t, localCfg(t))
+	defer a.Close()
+
+	req, err := http.NewRequest("GET", a.URL+"/api/health", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = "evil.example"
+	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	if err != nil {
+		t.Fatalf("GET with foreign Host: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusMisdirectedRequest {
+		t.Fatalf("foreign Host = %d, want 421", resp.StatusCode)
+	}
+}
+
 func TestCloseStopsHTTPServer(t *testing.T) {
 	a := startLocal(t, localCfg(t))
 	servedURL := a.URL

@@ -31,6 +31,12 @@ type Server struct {
 // assets into the binary. The API bundle must already be fully wired.
 func New(cfg *config.Config, a *api.API) *Server {
 	r := chi.NewRouter()
+	if cfg.Password == "" && isLoopbackBind(cfg.Bind) {
+		// Unauthenticated local default: refuse foreign Host headers so a
+		// malicious site cannot DNS-rebind its domain to loopback and
+		// drive the API from the victim's browser.
+		r.Use(hostGuard)
+	}
 	r.Use(middleware.RequestID, middleware.RealIP)
 	r.Use(middleware.Logger, middleware.Recoverer)
 	r.Use(middleware.Timeout(120 * time.Second))
@@ -49,6 +55,33 @@ func New(cfg *config.Config, a *api.API) *Server {
 	r.Get("/*", spaFallback(dist, fileServer))
 
 	return &Server{cfg: cfg, handler: r}
+}
+
+// hostGuard rejects requests whose Host header is not a loopback name.
+// Server and multiuser modes authenticate instead, and a user who widened
+// the bind to the LAN intends non-loopback hosts.
+func hostGuard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := r.Host
+		if h, _, err := net.SplitHostPort(r.Host); err == nil {
+			host = h
+		}
+		host = strings.Trim(host, "[]")
+		switch host {
+		case "localhost", "127.0.0.1", "::1":
+			next.ServeHTTP(w, r)
+		default:
+			http.Error(w, "misdirected: unknown Host", http.StatusMisdirectedRequest)
+		}
+	})
+}
+
+func isLoopbackBind(bind string) bool {
+	switch strings.Trim(bind, "[]") {
+	case "", "localhost", "127.0.0.1", "::1":
+		return true
+	}
+	return false
 }
 
 // spaFallback serves static files, falling back to index.html for paths the
