@@ -74,5 +74,9 @@ func spaFallback(dist fs.FS, fileServer http.Handler) http.HandlerFunc {
 	}
 }
 
+// Handler exposes the fully-wired router for embedders that own the
+// http.Server lifecycle themselves (graceful shutdown, custom listeners).
+func (s *Server) Handler() http.Handler { return s.handler }
+
 // Serve runs the HTTP server on an already-bound listener.
 func (s *Server) Serve(ln net.Listener) error { return http.Serve(ln, s.handler) }

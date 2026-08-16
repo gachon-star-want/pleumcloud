@@ -139,6 +139,31 @@ the package, with mock-based tests written before the client code.
 interface + docs-pinned mock tests keep behavior uniform across
 contributors without requiring live accounts to run CI.
 
+### D11 — One codebase, three product forms, sequential B2C launch
+
+*(Decided 2026-08-17. Amends D1: local-first stays the default and the
+trust anchor; server/hosted become opt-in forms on top of the same core.)*
+
+**Decision.** One codebase ships three forms: **local** (default, as
+today), **server** (`_SERVER=1`, self-hosted OSS), and **hosted**
+(the `_MULTIUSER=1` mode operated by us, gated on per-user secret
+encryption). B2C launches sequentially: desktop app (Wails v2 shell
+around the local core, with a license key + freemium gates) first,
+hosted second. `PleumCloud_PaaS/` — a separate hosted codebase sharing
+zero code with the core — is archived: kept, but no new investment.
+
+**Why.** Two parallel codebases is the classic way a solo project ships
+neither. The multiuser mode already lives in the core, so hosted needs
+hardening, not a rewrite. Market timing: odrive killed its free tier
+(2026-03-31) leaving paying refugees looking for alternatives; MultCloud
+proves hosted aggregation monetizes. Desktop-first also earns the trust
+story (tokens stay local) that hosted then rides on as a premium.
+
+**Rejected.** Keeping the separate PaaS codebase (zero code reuse,
+duplicate product); launching both forms simultaneously (solo bandwidth);
+hosted-first (weaker trust story, token-custody liability before any
+paying users exist).
+
 ## Provider matrix
 
 Inclusion criteria: **official third-party API + meaningful free tier +

@@ -3,38 +3,16 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
-	"net"
 	"os"
-	"path/filepath"
-	"time"
+	"os/signal"
+	"syscall"
 
-	"github.com/pleumcloud/pleumcloud/internal/api"
-	"github.com/pleumcloud/pleumcloud/internal/auth"
+	"github.com/pleumcloud/pleumcloud/internal/app"
 	"github.com/pleumcloud/pleumcloud/internal/browser"
-	"github.com/pleumcloud/pleumcloud/internal/config"
-	"github.com/pleumcloud/pleumcloud/internal/index"
-	"github.com/pleumcloud/pleumcloud/internal/oauthflow"
-	"github.com/pleumcloud/pleumcloud/internal/provider"
-	"github.com/pleumcloud/pleumcloud/internal/secret"
-	"github.com/pleumcloud/pleumcloud/internal/server"
-	"github.com/pleumcloud/pleumcloud/internal/store"
 	"github.com/pleumcloud/pleumcloud/internal/ui"
-
-	// Connectors self-register into the provider registry.
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/bridge"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/drime"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/dropbox"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/gdrive"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/koofr"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/mediafire"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/mybox"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/onedrive"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/pcloud"
-	_ "github.com/pleumcloud/pleumcloud/internal/provider/webdav"
 )
 
 // version is set at build time via -ldflags "-X main.version=..."
@@ -49,175 +27,31 @@ func main() {
 		return
 	}
 
-	cfg, err := config.Load()
+	a, err := app.Start(app.Options{Version: version})
 	if err != nil {
-		log.Fatalf("config: %v", err)
-	}
-	if *noBrowser {
-		cfg.NoBrowser = true
+		log.Fatalf("start: %v", err)
 	}
 
-	st, err := store.Open(cfg.DBPath())
-	if err != nil {
-		log.Fatalf("database: %v", err)
-	}
-	defer st.Close()
-
-	var secrets secret.Store = secret.New(cfg.DataDir)
-	if !cfg.MultiUser {
-		// Local mode keeps the keychain-or-file store as-is.
-		_ = secrets
-	} else {
-		// Server deployments deserve encryption at rest even on the file
-		// fallback; keychain users already get OS protection.
-		if es, err := secret.NewEncryptedFileStore(cfg.DataDir); err == nil {
-			secrets = es
-		} else {
-			log.Fatalf("secret store: %v", err)
-		}
-	}
-	oauth := oauthflow.NewManager(secrets)
-	idx := index.New(st)
-	tokens, err := auth.LoadOrCreateTokenKey(filepath.Join(cfg.DataDir, "auth.key"))
-	if err != nil {
-		log.Fatalf("token key: %v", err)
-	}
-
-	a := api.New(st, secrets, oauth, idx, tokens, cfg.MultiUser, version)
-	a.SetDataDir(cfg.DataDir)
-	if err := a.InitLocalUser(); err != nil {
-		log.Fatalf("local user: %v", err)
-	}
-	if err := a.LoadBYOCredentials(); err != nil {
-		log.Fatalf("load credentials: %v", err)
-	}
-
-	// Background workers: keep the unified index fresh, drain transfers.
-	go syncLoop(idx, secrets)
-	go transferLoop(st, secrets)
-
-	srv := server.New(cfg, a)
-	addr := cfg.BindAddr()
-
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "listen: %v\n", err)
-		os.Exit(1)
-	}
-
-	url := cfg.LocalURL()
-	fmt.Print(ui.Banner(version, url, cfg.DataDir))
-	if cfg.MultiUser {
-		fmt.Println("  multi-user mode: registration open at /  (share http://<host>:" + fmt.Sprint(cfg.Port) + ")")
-	} else if cfg.ServerMode {
-		fmt.Println("  server mode: auth enabled — share http://<host>:" + fmt.Sprint(cfg.Port))
+	// Start returns with the listener already bound, so the page is
+	// guaranteed to load.
+	fmt.Print(ui.Banner(version, a.URL, a.Cfg.DataDir))
+	if a.Cfg.MultiUser {
+		fmt.Println("  multi-user mode: registration open at /  (share http://<host>:" + fmt.Sprint(a.Cfg.Port) + ")")
+	} else if a.Cfg.ServerMode {
+		fmt.Println("  server mode: auth enabled — share http://<host>:" + fmt.Sprint(a.Cfg.Port))
 	}
 	fmt.Println("  Press Ctrl+C to stop.")
 
-	// Open the default browser only after the listener is bound, so the
-	// page is guaranteed to load.
-	if !cfg.NoBrowser {
-		if err := browser.Open(url); err != nil {
-			fmt.Printf("  (couldn't open a browser: %v - open %s manually)\n", err, url)
+	if !a.Cfg.NoBrowser && !*noBrowser {
+		if err := browser.Open(a.URL); err != nil {
+			fmt.Printf("  (couldn't open a browser: %v - open %s manually)\n", err, a.URL)
 		}
 	}
 
-	if err := srv.Serve(ln); err != nil {
-		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
-		os.Exit(1)
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	<-sig
+	if err := a.Close(); err != nil {
+		log.Printf("shutdown: %v", err)
 	}
-}
-
-// syncLoop refreshes every account's index: shortly after startup, then
-// every 5 minutes. One flaky account must never take the server down, so
-// each round runs under recover and per-account errors are logged.
-func syncLoop(idx *index.Indexer, secrets secret.Store) {
-	deps := provider.Deps{Secrets: secrets}
-	run := func() (err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				err = fmt.Errorf("panic: %v", r)
-			}
-		}()
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
-		errs := idx.SyncAll(ctx, deps, provider.Build)
-		for acct, err := range errs {
-			log.Printf("sync: account %s: %v", acct, err)
-		}
-		return errs["*"]
-	}
-	time.Sleep(3 * time.Second)
-	if err := run(); err != nil {
-		log.Printf("sync round failed: %v", err)
-	}
-	t := time.NewTicker(5 * time.Minute)
-	defer t.Stop()
-	for range t.C {
-		if err := run(); err != nil {
-			log.Printf("sync round failed: %v", err)
-		}
-	}
-}
-
-// transferLoop drains cross-cloud jobs sequentially, streaming source →
-// server → destination so phones can drop off mid-transfer.
-func transferLoop(st *store.Store, secrets secret.Store) {
-	for {
-		job, err := st.ClaimNextQueuedJob()
-		if err != nil || job == nil {
-			time.Sleep(2 * time.Second)
-			continue
-		}
-		runTransfer(st, secrets, job)
-	}
-}
-
-func runTransfer(st *store.Store, secrets secret.Store, job *store.JobRow) {
-	fail := func(msg string) { _ = st.FinishJob(job.ID, "failed", msg) }
-
-	srcRow, err := st.GetAccount(job.SrcAccount)
-	if err != nil {
-		fail("source account missing")
-		return
-	}
-	dstRow, err := st.GetAccount(job.DstAccount)
-	if err != nil {
-		fail("destination account missing")
-		return
-	}
-	srcConn, ok := provider.Build(srcRow.ProviderID, provider.Deps{Secrets: secrets})
-	if !ok {
-		fail("no source connector")
-		return
-	}
-	dstConn, ok := provider.Build(dstRow.ProviderID, provider.Deps{Secrets: secrets})
-	if !ok {
-		fail("no destination connector")
-		return
-	}
-	srcRef := provider.AccountRef{ID: srcRow.ID, ProviderID: srcRow.ProviderID, SecretRef: srcRow.SecretRef}
-	dstRef := provider.AccountRef{ID: dstRow.ID, ProviderID: dstRow.ProviderID, SecretRef: dstRow.SecretRef}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Hour)
-	defer cancel()
-
-	rc, err := srcConn.Open(ctx, srcRef, job.SrcRemote, nil)
-	if err != nil {
-		fail(err.Error())
-		return
-	}
-	defer rc.Close()
-
-	progress := func(done, total int64) {
-		if total <= 0 {
-			total = job.TotalBytes
-		}
-		_ = st.UpdateJobProgress(job.ID, done, total)
-	}
-	if _, err := dstConn.Upload(ctx, dstRef, "", job.FileName, rc, job.TotalBytes, progress); err != nil {
-		fail(err.Error())
-		return
-	}
-	_ = st.FinishJob(job.ID, "done", "")
 }
