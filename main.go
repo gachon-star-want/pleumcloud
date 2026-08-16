@@ -93,7 +93,7 @@ func main() {
 	}
 
 	// Background workers: keep the unified index fresh, drain transfers.
-	go syncLoop(idx)
+	go syncLoop(idx, secrets)
 	go transferLoop(st, secrets)
 
 	srv := server.New(cfg, a)
@@ -129,19 +129,34 @@ func main() {
 }
 
 // syncLoop refreshes every account's index: shortly after startup, then
-// every 5 minutes.
-func syncLoop(idx *index.Indexer) {
-	run := func() {
+// every 5 minutes. One flaky account must never take the server down, so
+// each round runs under recover and per-account errors are logged.
+func syncLoop(idx *index.Indexer, secrets secret.Store) {
+	deps := provider.Deps{Secrets: secrets}
+	run := func() (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("panic: %v", r)
+			}
+		}()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
-		_ = idx.SyncAll(ctx, provider.Deps{}, provider.Build)
+		errs := idx.SyncAll(ctx, deps, provider.Build)
+		for acct, err := range errs {
+			log.Printf("sync: account %s: %v", acct, err)
+		}
+		return errs["*"]
 	}
 	time.Sleep(3 * time.Second)
-	run()
+	if err := run(); err != nil {
+		log.Printf("sync round failed: %v", err)
+	}
 	t := time.NewTicker(5 * time.Minute)
 	defer t.Stop()
 	for range t.C {
-		run()
+		if err := run(); err != nil {
+			log.Printf("sync round failed: %v", err)
+		}
 	}
 }
 

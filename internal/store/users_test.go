@@ -121,3 +121,38 @@ func TestV1DatabaseUpgradesToLocalUser(t *testing.T) {
 		t.Fatalf("local-scoped access failed: %+v err=%v", got, err)
 	}
 }
+
+// Pre-multiuser rows carry the literal 'local' user_id; they must be
+// adopted by the real local user row or every user-scoped view hides them.
+func TestAdoptLegacyLocalRows(t *testing.T) {
+	st := newUsersStore(t)
+	local, _ := st.EnsureUser("local", "")
+	if local == "local" {
+		t.Fatal("test needs a generated local id (regenerate guard)")
+	}
+	// v1-era row: literal 'local'.
+	if _, err := st.db.Exec(`INSERT INTO accounts (id, provider_id, label, auth_kind, secret_ref, created_at, user_id)
+		VALUES ('legacy', 'mybox', 'Old', 'pat', 's', 0, 'local')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.db.Exec(`INSERT INTO jobs (id, kind, state, src_account_id, total_bytes, created_at, updated_at, user_id)
+		VALUES ('j1', 'transfer', 'queued', 'legacy', 1, 0, 0, 'local')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.db.Exec(`INSERT INTO rules (id, priority, enabled, match_field, match_op, match_value, target, user_id)
+		VALUES ('r1', 1, 1, 'mime', 'is', 'video/', 'legacy', 'local')`); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := st.AdoptLegacyLocalRows(local); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := st.GetAccountForUser("legacy", local); err != nil {
+		t.Fatalf("legacy account not adopted: %v", err)
+	}
+	jobs, _ := st.ListJobsForUser(local, 10)
+	rules, _ := st.ListRulesForUser(local)
+	if len(jobs) != 1 || len(rules) != 1 {
+		t.Fatalf("jobs=%d rules=%d", len(jobs), len(rules))
+	}
+}

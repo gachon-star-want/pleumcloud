@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +24,15 @@ import (
 
 // apiBase is a var so tests can point it at a fake server.
 var apiBase = "https://open-api.mybox.naver.com"
+
+// The MyBox API rate-limits (PLAT-429) without documented thresholds, so
+// the initial walk paces itself and backs off hard on 429 — live testing
+// showed the window can outlast short retries. Vars for tests.
+var (
+	mbWalkPace    = 150 * time.Millisecond // pause between listing calls
+	mb429Backoff  = 1 * time.Second        // first backoff, doubling per retry
+	mb429MaxTries = 7
+)
 
 func init() {
 	provider.RegisterFactory("mybox", New)
@@ -138,14 +149,37 @@ type mbResource struct {
 
 func toFile(r mbResource) provider.File {
 	mt, _ := time.Parse(time.RFC3339, r.ModifiedAt)
+	parent := r.ParentID
+	if strings.EqualFold(parent, "root") {
+		parent = "" // unified root is keyed on ""
+	}
 	return provider.File{
 		RemoteID: r.ResourceID,
-		ParentID: r.ParentID,
+		ParentID: parent,
 		Name:     r.Name,
 		IsDir:    strings.Contains(strings.ToLower(r.Type), "folder"),
 		Size:     r.Size,
+		MIME:     mimeFor(r),
 		ModTime:  mt,
 	}
+}
+
+// mimeFor derives a MIME type: the file extension first, then the API's
+// category as a coarse fallback (HEIC files are why the fallback exists —
+// few systems resolve .heic from their mime tables).
+func mimeFor(r mbResource) string {
+	if strings.Contains(strings.ToLower(r.Type), "folder") {
+		return ""
+	}
+	ext := strings.ToLower(filepath.Ext(r.Name))
+	if m := mime.TypeByExtension(ext); m != "" {
+		return m
+	}
+	switch strings.ToLower(r.Category) {
+	case "image", "video", "audio":
+		return strings.ToLower(r.Category) + "/" + strings.TrimPrefix(ext, ".")
+	}
+	return ""
 }
 
 // ---- Connector implementation ----
@@ -158,7 +192,9 @@ func (c *connector) listURL(parentRemoteID string) string {
 }
 
 func (c *connector) List(ctx context.Context, acct provider.AccountRef, parentRemoteID, pageToken string) ([]provider.File, string, error) {
-	q := url.Values{"sort": {"name,asc"}, "count": {"100"}}
+	// Docs cap `count` at 1000 (default 100); max pages mean the fewest
+	// requests against the undocumented rate limit.
+	q := url.Values{"sort": {"name,asc"}, "count": {"1000"}}
 	if pageToken != "" {
 		q.Set("cursor", pageToken)
 	}
@@ -173,7 +209,14 @@ func (c *connector) List(ctx context.Context, acct provider.AccountRef, parentRe
 	}
 	files := make([]provider.File, 0, len(out.Resources))
 	for _, r := range out.Resources {
-		files = append(files, toFile(r))
+		f := toFile(r)
+		if parentRemoteID == "" {
+			// Root listings report the account's opaque root-folder id as
+			// parentId (base64 blob, not a fixed sentinel); the unified
+			// root is keyed on "".
+			f.ParentID = ""
+		}
+		files = append(files, f)
 	}
 	return files, out.ResponseMetaData.NextCursor, nil
 }
@@ -190,7 +233,8 @@ func (c *connector) Quota(ctx context.Context, acct provider.AccountRef) (provid
 }
 
 // Changes: MyBox has no delta feed — a bounded BFS walk stands in for the
-// initial index (rate limits are respected by paging at 100/page).
+// initial index. The walk is paced and retries on 429 so a rate-limited
+// burst doesn't kill the sync.
 func (c *connector) Changes(ctx context.Context, acct provider.AccountRef, cursor string) (provider.Changes, error) {
 	if cursor != "" {
 		// No incremental cursor exists yet; tell the indexer to re-walk.
@@ -204,7 +248,7 @@ func (c *connector) Changes(ctx context.Context, acct provider.AccountRef, curso
 		queue = queue[1:]
 		token := ""
 		for {
-			files, next, err := c.List(ctx, acct, cur.parent, token)
+			files, next, err := c.listWithRetry(ctx, acct, cur.parent, token)
 			if err != nil {
 				return provider.Changes{}, err
 			}
@@ -218,9 +262,41 @@ func (c *connector) Changes(ctx context.Context, acct provider.AccountRef, curso
 				break
 			}
 			token = next
+			if err := mbSleep(ctx, mbWalkPace); err != nil {
+				return provider.Changes{}, err
+			}
+		}
+		if err := mbSleep(ctx, mbWalkPace); err != nil {
+			return provider.Changes{}, err
 		}
 	}
 	return provider.Changes{Cursor: "walk", Upserted: all}, nil
+}
+
+// listWithRetry lists one page, retrying with backoff while the API
+// answers 429 (the docs give no thresholds, only the error code).
+func (c *connector) listWithRetry(ctx context.Context, acct provider.AccountRef, parent, token string) ([]provider.File, string, error) {
+	delay := mb429Backoff
+	for try := 0; ; try++ {
+		files, next, err := c.List(ctx, acct, parent, token)
+		var mb *mbError
+		if !errors.As(err, &mb) || mb.Status != http.StatusTooManyRequests || try >= mb429MaxTries {
+			return files, next, err
+		}
+		if err := mbSleep(ctx, delay); err != nil {
+			return nil, "", err
+		}
+		delay *= 2
+	}
+}
+
+func mbSleep(ctx context.Context, d time.Duration) error {
+	select {
+	case <-time.After(d):
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (c *connector) Upload(ctx context.Context, acct provider.AccountRef, parentRemoteID, name string, r io.Reader, size int64, progress provider.ProgressFn) (provider.File, error) {

@@ -66,7 +66,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
 
   const files = tree.data?.files ?? [];
   const busy = tree.isLoading;
-  const images = files.filter((f) => !f.isDir && (f.mime?.startsWith("image/") || /\.(jpe?g|png|gif|webp)$/i.test(f.name)));
+  const images = files.filter((f) => !f.isDir && (f.mime?.startsWith("image/") || /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(f.name)));
 
   const galleryGrid = (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">

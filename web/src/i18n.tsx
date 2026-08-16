@@ -11,6 +11,7 @@ const dict: Record<string, [string, string]> = {
   settings: ["Settings", "설정"],
   uploadRules: ["upload rules", "업로드 규칙"],
   clouds: ["Clouds", "클라우드"],
+  reconnectNeeded: ["Reconnect needed — token rejected", "재연결 필요 — 토큰이 거부됐습니다"],
   connectCloud: ["Connect a cloud", "클라우드 연결"],
   noCloudsYet: ["No clouds connected yet.", "연결된 클라우드가 없습니다."],
   usageAfter: ["Usage appears once you connect clouds.", "클라우드를 연결하면 사용량이 표시됩니다."],

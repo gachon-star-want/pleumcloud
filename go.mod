@@ -7,6 +7,7 @@ require (
 	github.com/studio-b12/gowebdav v0.13.0
 	github.com/zalando/go-keyring v0.2.8
 	golang.org/x/crypto v0.55.0
+	golang.org/x/image v0.45.0
 	golang.org/x/net v0.58.0
 	golang.org/x/oauth2 v0.36.0
 	modernc.org/sqlite v1.56.0

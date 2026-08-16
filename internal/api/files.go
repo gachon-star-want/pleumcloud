@@ -3,6 +3,7 @@
 package api
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -15,13 +16,17 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/webp"
 
 	"github.com/pleumcloud/pleumcloud/internal/placement"
 	"github.com/pleumcloud/pleumcloud/internal/provider"
@@ -41,6 +46,7 @@ func jsonDecode(r *http.Request, v any) error {
 func (a *API) registerFileRoutes(r chi.Router) {
 	r.Get("/tree", a.requireUser(a.tree))
 	r.Get("/search", a.requireUser(a.search))
+	r.Get("/usage", a.requireUser(a.usage))
 	r.Post("/sync", a.requireUser(a.syncNow))
 	r.Post("/upload", a.requireUser(a.upload))
 	r.Get("/jobs", a.requireUser(a.jobs))
@@ -617,12 +623,30 @@ func parseRange(h string, size int64) (httpRange, bool) {
 
 // ---- thumbnails ----
 
+// heicConvert shells out to the OS's HEIC→JPEG converter: sips ships with
+// macOS; heif-convert comes from libheif-examples on Linux. Var so tests
+// can substitute a fake.
+var heicConvert = func(ctx context.Context, in, out string, size int) error {
+	var cmd *exec.Cmd
+	if runtime.GOOS == "darwin" {
+		cmd = exec.CommandContext(ctx, "sips", "-s", "format", "jpeg", "--resampleWidth", strconv.Itoa(size), in, "--out", out)
+	} else {
+		cmd = exec.CommandContext(ctx, "heif-convert", in, out)
+	}
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("HEIC converter unavailable (install libheif-examples for heif-convert): %w", err)
+	}
+	return nil
+}
+
 // thumb generates (once) and serves a local JPEG thumbnail for image files,
 // uniformly across every provider: the source is fetched through the
-// connector, downscaled in-process (pure stdlib), and cached on disk.
+// connector, downscaled in-process, and cached on disk. HEIC/HEIF sources —
+// opaque both to the Go decoder and to most browsers — go through the OS
+// converter first. ?size= picks the long-edge cap (default 384).
 func (a *API) thumb(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	row, err := a.store.GetFile(id)
+	row, err := a.store.GetFileForUser(id, userID(r))
 	if err != nil || row.IsDir {
 		writeErr(w, http.StatusNotFound, fmt.Errorf("file not found"))
 		return
@@ -631,7 +655,8 @@ func (a *API) thumb(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusUnsupportedMediaType, fmt.Errorf("not an image"))
 		return
 	}
-	cachePath := filepath.Join(a.thumbDir, id+".jpg")
+	size := thumbSize(r.URL.Query().Get("size"))
+	cachePath := filepath.Join(a.thumbDir, fmt.Sprintf("%s_%d.jpg", id, size))
 	if b, err := os.ReadFile(cachePath); err == nil {
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.Header().Set("Cache-Control", "private, max-age=86400")
@@ -650,12 +675,12 @@ func (a *API) thumb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rc.Close()
-	img, _, err := image.Decode(rc)
+	img, err := decodeThumb(r.Context(), rc, size)
 	if err != nil {
 		writeErr(w, http.StatusUnprocessableEntity, fmt.Errorf("decode image: %v", err))
 		return
 	}
-	thumb := scaleDown(img, 384)
+	thumb := scaleDown(img, size)
 	if err := os.MkdirAll(a.thumbDir, 0o700); err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
@@ -671,11 +696,79 @@ func (a *API) thumb(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
+// thumbSize clamps ?size= to a sane long-edge range.
+func thumbSize(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil || n < 64 {
+		return 384
+	}
+	if n > 2048 {
+		return 2048
+	}
+	return n
+}
+
+// isHEIFHead reports whether the 12-byte prefix is an ISO-BMFF ftyp box
+// with a HEIF-family brand (iPhone photos say "heic").
+func isHEIFHead(b []byte) bool {
+	if len(b) < 12 || !bytes.Equal(b[4:8], []byte("ftyp")) {
+		return false
+	}
+	switch string(b[8:12]) {
+	case "heic", "heix", "hevc", "heif", "mif1", "msf1":
+		return true
+	}
+	return false
+}
+
+// decodeThumb decodes an image stream, routing HEIF payloads through the
+// OS converter (they land as JPEG, which the stdlib then handles).
+func decodeThumb(ctx context.Context, src io.Reader, size int) (image.Image, error) {
+	br := bufio.NewReader(src)
+	if head, err := br.Peek(12); err == nil && isHEIFHead(head) {
+		return decodeHEIF(ctx, br, size)
+	}
+	img, _, err := image.Decode(br)
+	return img, err
+}
+
+// decodeHEIF spools the HEIC stream to a temp file, converts it with the
+// OS converter and decodes the resulting JPEG.
+func decodeHEIF(ctx context.Context, src io.Reader, size int) (image.Image, error) {
+	in, err := os.CreateTemp("", "pleumcloud-*.heic")
+	if err != nil {
+		return nil, err
+	}
+	inName := in.Name()
+	defer os.Remove(inName)
+	outName := inName[:len(inName)-len(".heic")] + ".jpg"
+	defer os.Remove(outName)
+
+	if _, err := io.Copy(in, src); err != nil {
+		in.Close()
+		return nil, err
+	}
+	if err := in.Close(); err != nil {
+		return nil, err
+	}
+	if err := heicConvert(ctx, inName, outName, size); err != nil {
+		return nil, err
+	}
+	f, err := os.Open(outName)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	img, _, err := image.Decode(f)
+	return img, err
+}
+
 func isImageName(name string) bool {
 	switch {
 	case strings.HasSuffix(name, ".jpg"), strings.HasSuffix(name, ".jpeg"),
 		strings.HasSuffix(name, ".png"), strings.HasSuffix(name, ".gif"),
-		strings.HasSuffix(name, ".webp"), strings.HasSuffix(name, ".bmp"):
+		strings.HasSuffix(name, ".webp"), strings.HasSuffix(name, ".bmp"),
+		strings.HasSuffix(name, ".heic"), strings.HasSuffix(name, ".heif"):
 		return true
 	}
 	return false

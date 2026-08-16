@@ -34,3 +34,6 @@ data/
 # Env
 .env
 .env.local
+
+# Hosted B2C product (proprietary; keep out of the AGPL OSS tree)
+PleumCloud_PaaS/

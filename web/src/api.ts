@@ -205,6 +205,6 @@ export function fmtDate(unix: number): string {
 export function inlineURL(id: string): string {
   return `/api/file/${id}/download?inline=1`;
 }
-export function thumbURL(id: string): string {
-  return `/api/file/${id}/thumb`;
+export function thumbURL(id: string, size = 384): string {
+  return `/api/file/${id}/thumb?size=${size}`;
 }

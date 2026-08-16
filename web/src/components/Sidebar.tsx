@@ -18,9 +18,13 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
     queryFn: api.providers,
   });
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: api.accounts });
+  const usage = useQuery({ queryKey: ["usage"], queryFn: filesApi.usage, refetchInterval: 60_000 });
   const qc = useQueryClient();
   const meta = providers.data?.providers ?? [];
   const connected = accounts.data?.accounts ?? [];
+  const errorsByAccount = new Map(
+    (usage.data?.usage ?? []).filter((e) => e.error).map((e) => [e.accountId, e.error as string]),
+  );
 
   return (
     <aside className="hidden w-72 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
@@ -50,27 +54,32 @@ export default function Sidebar({ connectedCount, onConnect }: SidebarProps) {
         {t("clouds")} ({connectedCount})
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        {connected.map((a) => (
-          <div
-            key={a.id}
-            className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-100"
-          >
-            <ProviderLogo id={a.providerId} className="size-6" />
-            <span className="min-w-0 flex-1 truncate text-sm text-slate-600">
-              {a.label}
-            </span>
-            <button
-              aria-label={`Disconnect ${a.label}`}
-              onClick={async () => {
-                await api.disconnect(a.id);
-                qc.invalidateQueries({ queryKey: ["accounts"] });
-              }}
-              className="hidden rounded px-1.5 text-xs text-slate-400 hover:text-red-600 group-hover:block"
+        {connected.map((a) => {
+          const err = errorsByAccount.get(a.id);
+          return (
+            <div
+              key={a.id}
+              title={err ? `${t("reconnectNeeded")}\n${err}` : undefined}
+              className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-slate-100"
             >
-              ✕
-            </button>
-          </div>
-        ))}
+              <ProviderLogo id={a.providerId} className="size-6" />
+              <span className={`min-w-0 flex-1 truncate text-sm ${err ? "text-amber-700" : "text-slate-600"}`}>
+                {err ? "⚠ " : ""}
+                {a.label}
+              </span>
+              <button
+                aria-label={`Disconnect ${a.label}`}
+                onClick={async () => {
+                  await api.disconnect(a.id);
+                  qc.invalidateQueries({ queryKey: ["accounts"] });
+                }}
+                className="hidden rounded px-1.5 text-xs text-slate-400 hover:text-red-600 group-hover:block"
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
         <button
           onClick={onConnect}
           className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50"

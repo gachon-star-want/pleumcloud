@@ -600,6 +600,21 @@ func (s *Store) UserIDByEmail(email string) (string, error) {
 	return id, err
 }
 
+// AdoptLegacyLocalRows re-owns pre-multiuser rows: migration v2 backfilled
+// user_id with the literal 'local', while the real local user carries a
+// generated id — without this repair every user-scoped view hides them.
+func (s *Store) AdoptLegacyLocalRows(localUserID string) error {
+	if localUserID == "" || localUserID == "local" {
+		return nil
+	}
+	for _, table := range []string{"accounts", "jobs", "rules"} {
+		if _, err := s.db.Exec(`UPDATE `+table+` SET user_id = ? WHERE user_id = 'local'`, localUserID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // UserByEmail returns the full row (hash included) for login checks.
 func (s *Store) UserByEmail(email string) (UserRow, error) {
 	var u UserRow

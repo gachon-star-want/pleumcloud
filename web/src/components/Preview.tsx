@@ -1,5 +1,5 @@
 import { useEffect, type ReactElement } from "react";
-import { fmtBytes, inlineURL, type FileRow } from "../api";
+import { fmtBytes, inlineURL, thumbURL, type FileRow } from "../api";
 import Modal from "./Modal";
 
 /** Full preview modal: images, video (seekable via Range), audio, PDF, text. */
@@ -15,7 +15,10 @@ export default function Preview({ file, onClose }: { file: FileRow; onClose: () 
   const m = file.mime ?? "";
   let body: ReactElement;
   if (m.startsWith("image/")) {
-    body = <img src={url} alt={file.name} className="max-h-[70vh] max-w-full rounded-xl object-contain" />;
+    // HEIC is transcoded server-side (most browsers can't render the raw
+    // bytes), so previews ride the JPEG thumbnail pipeline at a larger size.
+    const src = /^image\/hei[cf]$/i.test(m) ? thumbURL(file.id, 1280) : url;
+    body = <img src={src} alt={file.name} className="max-h-[70vh] max-w-full rounded-xl object-contain" />;
   } else if (m.startsWith("video/")) {
     body = <video src={url} controls autoPlay className="max-h-[70vh] max-w-full rounded-xl" />;
   } else if (m.startsWith("audio/")) {

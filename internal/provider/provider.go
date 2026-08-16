@@ -137,10 +137,12 @@ var factories = map[string]Factory{}
 // RegisterFactory registers a connector builder for a provider ID.
 func RegisterFactory(id string, f Factory) { factories[id] = f }
 
-// Build constructs the connector for a provider ID.
+// Build constructs the connector for a provider ID. A nil secret store is
+// rejected: connectors read credentials lazily, so an unwired store would
+// otherwise panic on first use (as the M5 background sync loop did).
 func Build(id string, deps Deps) (Connector, bool) {
 	f, ok := factories[id]
-	if !ok {
+	if !ok || deps.Secrets == nil {
 		return nil, false
 	}
 	return f(deps), true

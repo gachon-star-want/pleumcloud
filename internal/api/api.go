@@ -55,6 +55,9 @@ func (a *API) InitLocalUser() error {
 	if err != nil {
 		return err
 	}
+	if err := a.store.AdoptLegacyLocalRows(id); err != nil {
+		return err
+	}
 	a.localUserID = id
 	return nil
 }
@@ -306,6 +309,8 @@ func (a *API) createAccount(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
+	// Files should appear without waiting for the background sync round.
+	go a.syncAccount(id)
 	writeJSON(w, http.StatusCreated, map[string]string{"id": id, "label": label})
 }
 
@@ -536,5 +541,7 @@ func (a *API) connectCallback(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<h3>PleumCloud — could not save the account</h3><p>%s</p>", err)
 		return
 	}
+	// Files should appear without waiting for the background sync round.
+	go a.syncAccount(acctID)
 	http.Redirect(w, r, "/?connected="+id, http.StatusFound)
 }
