@@ -1,25 +1,28 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { filesApi, fmtBytes, fmtDate, thumbURL, type FileRow } from "../api";
 import { api, providerDot } from "../api";
+import type { Crumb } from "../App";
 import ProviderLogo from "./ProviderLogo";
 import Modal from "./Modal";
 import Preview from "./Preview";
 import { useT } from "../i18n";
 
-interface Crumb {
-  remoteId: string;
-  name: string;
-  accountId: string;
+interface FileBrowserProps {
+  onConnect: () => void;
+  crumbs: Crumb[];
+  onCrumbs: (crumbs: Crumb[]) => void;
+  preview: FileRow | null;
+  onPreview: (file: FileRow) => void;
+  onClosePreview: () => void;
 }
 
-export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
+export default function FileBrowser({ onConnect, crumbs, onCrumbs, preview, onPreview, onClosePreview }: FileBrowserProps) {
   const t = useT();
-  const [crumbs, setCrumbs] = useState<Crumb[]>([]); // [] = unified root
   const [transferFile, setTransferFile] = useState<FileRow | null>(null);
-  const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
   const [gallery, setGallery] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const qc = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -31,6 +34,11 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
     queryKey: ["tree", parentRemote, parentAccount],
     queryFn: () => filesApi.tree(parentRemote, parentAccount || undefined),
   });
+
+  // Entering another folder invalidates the old selection.
+  useEffect(() => {
+    setSelectedId(null);
+  }, [parentRemote, parentAccount]);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["tree"] });
@@ -68,13 +76,35 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
   const busy = tree.isLoading;
   const images = files.filter((f) => !f.isDir && (f.mime?.startsWith("image/") || /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(f.name)));
 
+  // Double-click (or Enter on the selection) opens: folders descend, files preview.
+  const openRow = (f: FileRow) => {
+    if (f.isDir) onCrumbs([...crumbs, { remoteId: f.remoteId, name: f.name, accountId: f.accountId }]);
+    else onPreview(f);
+  };
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.key === "Enter" && selectedId) {
+        const f = files.find((x) => x.id === selectedId);
+        if (f) openRow(f);
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
+
   const galleryGrid = (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
       {images.map((f) => (
         <button
           key={f.id}
-          onClick={() => setPreviewFile(f)}
-          className="group relative overflow-hidden rounded-xl bg-slate-200 shadow-sm transition hover:shadow-md"
+          onClick={() => setSelectedId(f.id)}
+          onDoubleClick={() => openRow(f)}
+          className={`group relative overflow-hidden rounded-xl bg-slate-200 shadow-sm transition hover:shadow-md ${
+            selectedId === f.id ? "ring-4 ring-blue-500 ring-offset-2" : ""
+          }`}
         >
           <img src={thumbURL(f.id)} alt={f.name} loading="lazy" className="aspect-square w-full object-cover" />
           <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 text-left text-xs font-medium text-white">
@@ -101,7 +131,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
       )}
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Breadcrumbs crumbs={crumbs} onNavigate={(i) => setCrumbs(crumbs.slice(0, i + 1))} />
+        <Breadcrumbs crumbs={crumbs} onNavigate={(i) => onCrumbs(crumbs.slice(0, i + 1))} />
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => {
@@ -173,18 +203,19 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
             </thead>
             <tbody>
               {files.map((f) => (
-                <tr key={f.id} className="group border-b border-slate-50 last:border-0 hover:bg-slate-50">
+                <tr
+                  key={f.id}
+                  onClick={() => setSelectedId(f.id)}
+                  onDoubleClick={() => openRow(f)}
+                  className={`group cursor-default border-b border-slate-50 last:border-0 ${
+                    selectedId === f.id ? "bg-blue-50" : "hover:bg-slate-50"
+                  }`}
+                >
                   <td className="px-4 py-2.5">
-                    <button
-                      className="flex max-w-xs items-center gap-2.5 text-left"
-                      onClick={() => {
-                        if (f.isDir) setCrumbs([...crumbs, { remoteId: f.remoteId, name: f.name, accountId: f.accountId }]);
-                        else setPreviewFile(f);
-                      }}
-                    >
+                    <span className="flex max-w-xs items-center gap-2.5 text-left">
                       <span className="text-lg leading-none">{f.isDir ? "🗂️" : fileIcon(f)}</span>
-                      <span className="truncate font-medium text-slate-700">{f.name}</span>
-                    </button>
+                      <span className={`truncate font-medium ${selectedId === f.id ? "text-blue-700" : "text-slate-700"}`}>{f.name}</span>
+                    </span>
                   </td>
                   <td className="hidden px-4 py-2.5 sm:table-cell">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
@@ -206,7 +237,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
                         if (name) act.mutate({ op: "rename", id: f.id, name });
                       }}
                       onTransfer={() => setTransferFile(f)}
-                      onPreview={() => setPreviewFile(f)}
+                      onPreview={() => onPreview(f)}
                     />
                   </td>
                 </tr>
@@ -216,7 +247,7 @@ export default function FileBrowser({ onConnect }: { onConnect: () => void }) {
         </div>
       )}
 
-      {previewFile && <Preview file={previewFile} onClose={() => setPreviewFile(null)} />}
+      {preview && <Preview file={preview} onClose={onClosePreview} />}
       {transferFile && (
         <TransferDialog file={transferFile} onClose={() => setTransferFile(null)} onQueued={(msg) => { setToast(msg); setTransferFile(null); }} />
       )}
