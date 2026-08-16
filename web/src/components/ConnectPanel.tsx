@@ -228,6 +228,7 @@ function PATDialog({
   provider: ProviderMeta;
   onClose: () => void;
 }) {
+  const t = useT();
   const [token, setToken] = useState("");
   const [email, setEmail] = useState("");
   const needsEmail = provider.id === "koofr";
@@ -246,7 +247,8 @@ function PATDialog({
     <Modal title={`Connect ${provider.name}`} onClose={onClose}>
       <div className="space-y-4">
         <p className="text-sm text-slate-500">
-          Paste a personal access token.{" "}
+          Paste a personal access token — PleumCloud never sees your account
+          password.{" "}
           {provider.docsUrl && (
             <a
               href={provider.docsUrl}
@@ -258,6 +260,21 @@ function PATDialog({
             </a>
           )}
         </p>
+        {provider.tokenUrl && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <a
+              href={provider.tokenUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-full bg-blue-600 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              {t("openTokenPage").replace("{name}", provider.name)}
+            </a>
+            {tokenStep(provider.id) && (
+              <p className="mt-2 text-xs text-slate-500">{t(tokenStep(provider.id)!)}</p>
+            )}
+          </div>
+        )}
         {needsEmail && (
           <Field
             label="Koofr account email"
@@ -287,6 +304,20 @@ function PATDialog({
       </div>
     </Modal>
   );
+}
+
+/** Per-provider hint under the "create a token" deep link. */
+function tokenStep(id: string): string | null {
+  switch (id) {
+    case "drime":
+      return "tokenStepsDrime";
+    case "mybox":
+      return "tokenStepsMybox";
+    case "koofr":
+      return "tokenStepsKoofr";
+    default:
+      return null;
+  }
 }
 
 function WebDAVDialog({ onClose }: { onClose: () => void }) {
@@ -336,6 +367,7 @@ function CredsDialog({
   provider: ProviderMeta;
   onClose: () => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState({ clientId: "", clientSecret: "" });
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -343,10 +375,22 @@ function CredsDialog({
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const save = useMutation({
-    mutationFn: () => api.saveCredentials(provider.id, form.clientId.trim(), form.clientSecret.trim()),
+    mutationFn: (v: { id: string; secret: string }) => api.saveCredentials(provider.id, v.id, v.secret),
     onSuccess: () => setSaved(true),
     onError: (e: Error) => setError(e.message),
   });
+
+  // Catch the classic invalid_client failure (screenshot-grade confusion)
+  // before it ever reaches Google: malformed or mispasted client IDs.
+  const onSave = () => {
+    const id = form.clientId.trim().replace(/\s+/g, "");
+    if (provider.id === "gdrive" && !/^\S+\.apps\.googleusercontent\.com$/.test(id)) {
+      setError(t("invalidGdriveId"));
+      return;
+    }
+    setError(null);
+    save.mutate({ id, secret: form.clientSecret.trim() });
+  };
 
   return (
     <Modal title={`${provider.name} — one-time setup`} onClose={onClose}>
@@ -355,16 +399,14 @@ function CredsDialog({
           {provider.name} needs an OAuth app before accounts can connect. Paste
           your own app credentials (Client ID + secret); they stay on this
           machine.{" "}
-          {provider.docsUrl && (
-            <a
-              href={provider.docsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-blue-600 hover:underline"
-            >
-              Developer docs ↗
-            </a>
-          )}
+          <a
+            href="https://github.com/gachon-star-want/pleumcloud/blob/main/docs/oauth-setup.md"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-blue-600 hover:underline"
+          >
+            {t("byoGuide")}
+          </a>
         </p>
         <Field label="Client ID" value={form.clientId} onChange={set("clientId")} autoFocus />
         <Field label="Client secret" type="password" value={form.clientSecret} onChange={set("clientSecret")} />
@@ -379,7 +421,7 @@ function CredsDialog({
         ) : (
           <button
             disabled={form.clientId.trim() === "" || save.isPending}
-            onClick={() => save.mutate()}
+            onClick={onSave}
             className="w-full rounded-full bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {save.isPending ? "Saving…" : "Save"}

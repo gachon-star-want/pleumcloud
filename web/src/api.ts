@@ -10,6 +10,8 @@ export interface ProviderMeta {
   tier: Tier;
   freeTierGB: number;
   docsUrl?: string;
+  /** For PAT providers: direct link to the provider's token-creation page. */
+  tokenUrl?: string;
   maxUploadBytes?: number;
   /** A connector implementation is registered for this provider. */
   supported?: boolean;
