@@ -164,6 +164,29 @@ duplicate product); launching both forms simultaneously (solo bandwidth);
 hosted-first (weaker trust story, token-custody liability before any
 paying users exist).
 
+### D12 — Two-track open source: web app + desktop app, revenue via hosted
+
+*(Decided 2026-08-17. Amends D11's desktop monetization: both tracks
+ship fully open source.)*
+
+**Decision.** Both product forms — the web app (local binary +
+self-hosted server mode) and the desktop app (Wails shell around the
+core) — ship as open source with no feature gates in the repository.
+Revenue comes from the hosted tier (and possible future services), not
+from locking OSS features. The license-key/freemium gates from D11's
+desktop phase are dropped.
+
+**Why.** Gates inside an AGPL repo get forked out and cost trust.
+Bitwarden and Immich show the working model: free, open clients build
+adoption, and the hosted service converts convenience demand. A fully
+open desktop app also strengthens the tokens-stay-local story that the
+hosted tier rides on — and it simplifies the roadmap: the desktop
+phase becomes shell + packaging only.
+
+**Rejected.** Freemium gates inside OSS code (forked out, trust cost);
+a closed desktop edition (contradicts the AGPL core and re-creates the
+two-codebase problem D11 closed).
+
 ## Provider matrix
 
 Inclusion criteria: **official third-party API + meaningful free tier +
