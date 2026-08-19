@@ -78,6 +78,7 @@ as a single ~18 MB binary with the UI embedded.
 
 The full matrix of every service we evaluated, and the reasoning behind all
 major design decisions, lives in [docs/decisions.md](docs/decisions.md).
+The UI design system lives in [docs/design.md](docs/design.md).
 
 ## Install
 
