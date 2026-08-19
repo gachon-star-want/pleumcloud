@@ -40,8 +40,9 @@ var version = "dev"
 // fails to start (e.g. port 7777 already in use) the redirector shows the
 // error instead of navigating.
 type Shell struct {
-	url string
-	err string
+	url  string
+	err  string
+	core *app.App
 
 	mu  sync.Mutex
 	ctx context.Context
@@ -58,6 +59,7 @@ func main() {
 	} else {
 		defer core.Close()
 		sh.url = core.URL
+		sh.core = core
 	}
 
 	if err := wails.Run(&options.App{
@@ -81,6 +83,7 @@ func main() {
 			sh.ctx = ctx
 			sh.mu.Unlock()
 		},
+		OnBeforeClose: sh.confirmQuit,
 		Bind: []interface{}{sh},
 		Mac: &mac.Options{
 			About: &mac.AboutInfo{
@@ -97,6 +100,29 @@ func (s *Shell) browserCtx() context.Context {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.ctx
+}
+
+// confirmQuit guards against quitting mid-transfer: transfers stream
+// through this process, so closing the window kills them. Returns true
+// (block close) unless the user explicitly quits. Fails open when the
+// core never started or the count errors — quitting stays the user's call.
+func (s *Shell) confirmQuit(ctx context.Context) bool {
+	if s.core == nil {
+		return false
+	}
+	n, err := s.core.Store.CountActiveJobs()
+	if err != nil || n == 0 {
+		return false
+	}
+	choice, _ := wruntime.MessageDialog(ctx, wruntime.MessageDialogOptions{
+		Type:          wruntime.QuestionDialog,
+		Title:         "Transfers in progress",
+		Message:       fmt.Sprintf("%d transfer(s) are still running — quitting cancels them. Quit anyway?", n),
+		Buttons:       []string{"Quit", "Cancel"},
+		DefaultButton: "Cancel",
+		CancelButton:  "Cancel",
+	})
+	return choice != "Quit"
 }
 
 // startupHint turns the raw bind error into an actionable message: OAuth

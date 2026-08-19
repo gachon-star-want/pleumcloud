@@ -482,6 +482,15 @@ func (s *Store) FinishJob(id, state, errMsg string) error {
 	return err
 }
 
+// CountActiveJobs reports how many jobs are queued or running. Transfers
+// stream through this process, so the desktop shell asks before quitting
+// over them.
+func (s *Store) CountActiveJobs() (int, error) {
+	var n int
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM jobs WHERE state IN ('queued', 'running')`).Scan(&n)
+	return n, err
+}
+
 func (s *Store) ClaimNextQueuedJob() (*JobRow, error) {
 	var j JobRow
 	var dstProvider string
