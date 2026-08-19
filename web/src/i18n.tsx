@@ -68,6 +68,9 @@ const dict: Record<string, [string, string]> = {
   tokenStepsKoofr: ["Open Settings → API tokens and generate a new token.", "설정 → API 토큰에서 새 토큰을 생성하세요."],
   invalidGdriveId: ["Google Client IDs look like 1234-abc.apps.googleusercontent.com — copy it exactly from Google Cloud Console → APIs & Services → Credentials.", "구글 Client ID는 1234-abc.apps.googleusercontent.com 형태입니다. Google Cloud Console → API 및 서비스 → 사용자 인증 정보에서 정확히 복사해서 붙여넣어 주세요."],
   byoGuide: ["Step-by-step guide ↗", "단계별 가이드 ↗"],
+  // Update banner
+  updateAvailable: ["PleumCloud {version} is available", "PleumCloud {version} 사용 가능"],
+  updateGet: ["Get it on GitHub ↗", "GitHub에서 받기 ↗"],
 };
 
 const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({ lang: "en", setLang: () => {} });

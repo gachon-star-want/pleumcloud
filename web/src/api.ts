@@ -31,6 +31,13 @@ export interface Health {
   time: string;
 }
 
+export interface Update {
+  available: boolean;
+  current: string;
+  latest: string;
+  url?: string;
+}
+
 export interface Credential {
   provider: string;
   configured: boolean;
@@ -59,6 +66,7 @@ async function send<T>(path: string, method: string, body?: unknown): Promise<T>
 
 export const api = {
   health: () => get<Health>("/api/health"),
+  update: () => get<Update>("/api/update"),
   authMode: () => get<{ multiuser: boolean }>("/api/auth/mode"),
   login: (email: string, password: string) =>
     send<{ email: string }>("/api/auth/login", "POST", { email, password }),

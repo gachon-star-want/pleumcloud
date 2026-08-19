@@ -22,6 +22,7 @@ import (
 	"github.com/gachon-star-want/pleumcloud/internal/provider"
 	"github.com/gachon-star-want/pleumcloud/internal/secret"
 	"github.com/gachon-star-want/pleumcloud/internal/store"
+	"github.com/gachon-star-want/pleumcloud/internal/update"
 )
 
 // API bundles handler dependencies.
@@ -35,11 +36,12 @@ type API struct {
 	localUserID string
 	thumbDir    string
 	version     string
+	updates     *update.Checker
 }
 
 // New wires the API handlers.
 func New(st *store.Store, secrets secret.Store, oauth *oauthflow.Manager, idx *index.Indexer, tokens *auth.TokenKey, multiuser bool, version string) *API {
-	return &API{store: st, secrets: secrets, oauth: oauth, indexer: idx, tokens: tokens, multiuser: multiuser, version: version}
+	return &API{store: st, secrets: secrets, oauth: oauth, indexer: idx, tokens: tokens, multiuser: multiuser, version: version, updates: &update.Checker{}}
 }
 
 // ---- authentication ----
@@ -138,6 +140,7 @@ func (a *API) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Get("/health", a.health)
 	r.Get("/providers", a.providers)
+	r.Get("/update", a.updateCheck)
 
 	// Auth surface (public).
 	r.Get("/auth/mode", a.authMode)
@@ -195,6 +198,13 @@ func (a *API) providers(w http.ResponseWriter, r *http.Request) {
 		out = append(out, pv{Metadata: m, Supported: provider.Supported(m.ID)})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"providers": out})
+}
+
+// updateCheck feeds the manual-update banner (D13): compares this build
+// against the latest GitHub release. Public like /health — it exposes
+// build metadata only, and every failure collapses to available=false.
+func (a *API) updateCheck(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, a.updates.Check(r.Context(), a.version))
 }
 
 // ---- accounts ----

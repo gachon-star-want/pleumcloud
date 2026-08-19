@@ -7,6 +7,7 @@ import EmptyState from "./components/EmptyState";
 import ConnectPanel from "./components/ConnectPanel";
 import FileBrowser from "./components/FileBrowser";
 import SearchResults from "./components/SearchResults";
+import UpdateBanner from "./components/UpdateBanner";
 import { useT } from "./i18n";
 
 export interface Crumb {
@@ -147,6 +148,7 @@ export default function App() {
           onConnect={() => navigate({ view: "connect", crumbs: [], preview: null })}
         />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <UpdateBanner />
           {toast && (
             <button
               onClick={() => setToast(null)}
