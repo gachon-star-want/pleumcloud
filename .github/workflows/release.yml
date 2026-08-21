@@ -97,7 +97,7 @@ jobs:
         run: gh release upload "$VERSION" "PleumCloud-${VERSION}-macOS-universal.dmg" --clobber
 
   desktop-windows:
-    runs-on: windows-latest # makensis is preinstalled
+    runs-on: windows-latest
     needs: cli
     steps:
       - uses: actions/checkout@v4
@@ -119,11 +119,17 @@ jobs:
       - name: Install wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.13.0
 
+      # NSIS ships with the windows runner image; fail loudly if that
+      # ever changes — wails only warns when makensis is missing, which
+      # would silently produce no installer.
+      - name: Check makensis
+        run: makensis -VERSION
+
       - name: Build desktop app + NSIS installer
         working-directory: desktop
         env:
           VERSION: ${{ github.ref_name }}
-        run: wails build -platform windows/amd64 -ldflags "-X main.version=$($env:VERSION -replace '^v','')"
+        run: wails build -platform windows/amd64 -nsis -ldflags "-X main.version=$($env:VERSION -replace '^v','')"
 
       - name: Upload to release
         env:
