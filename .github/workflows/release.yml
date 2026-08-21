@@ -119,13 +119,15 @@ jobs:
       - name: Install wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.13.0
 
+      # choco installs NSIS but its PATH edit doesn't reach later steps
+      # (the runner snapshots PATH at job start) — export it explicitly
+      # and verify makensis runs: wails only warns when it is missing,
+      # which would silently produce no installer.
       - name: Install NSIS
-        run: choco install nsis -y
-
-      # Fail loudly if makensis ever falls off PATH — wails only warns
-      # when it is missing, which would silently produce no installer.
-      - name: Check makensis
-        run: makensis -VERSION
+        run: |
+          choco install nsis -y
+          Add-Content -Path $env:GITHUB_PATH -Value "C:\Program Files (x86)\NSIS"
+          & "C:\Program Files (x86)\NSIS\makensis.exe" -VERSION
 
       - name: Build desktop app + NSIS installer
         working-directory: desktop
