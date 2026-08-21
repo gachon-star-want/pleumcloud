@@ -2,7 +2,7 @@ cask "pleumcloud" do
   # Template for the tap repo (gachon-star-want/homebrew-pleumcloud,
   # Casks/pleumcloud.rb). On each release: update version, then fill
   # sha256 with `shasum -a 256 <dmg>`.
-  version "0.4.0-beta.1"
+  version "0.4.0"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
 
   url "https://github.com/gachon-star-want/pleumcloud/releases/download/v#{version}/PleumCloud-v#{version}-macOS-universal.dmg"

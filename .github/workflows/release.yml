@@ -32,6 +32,10 @@ jobs:
       - name: Version guard (tag vs wails.json)
         run: |
           TAG="${GITHUB_REF_NAME#v}"
+          if ! echo "$TAG" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::tag must be vX.Y.Z with plain numbers — NSIS's VIFileVersion rejects prerelease suffixes"
+            exit 1
+          fi
           CFG="$(jq -r .info.productVersion desktop/wails.json)"
           if [ "$TAG" != "$CFG" ]; then
             echo "::error::tag $GITHUB_REF_NAME does not match desktop/wails.json productVersion $CFG"
