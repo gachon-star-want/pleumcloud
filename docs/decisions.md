@@ -175,7 +175,9 @@ paying users exist).
 ### D12 — Two-track open source: web app + desktop app, revenue via hosted
 
 *(Decided 2026-08-17. Amends D11's desktop monetization: both tracks
-ship fully open source.)*
+ship fully open source. Reconfirmed 2026-08-21: the desktop beta ships
+first with zero monetization work in it; the hosted tier stays deferred
+— later, not abandoned.)*
 
 **Decision.** Both product forms — the web app (local binary +
 self-hosted server mode) and the desktop app (Wails shell around the

@@ -82,7 +82,22 @@ The UI design system lives in [docs/design.md](docs/design.md).
 
 ## Install
 
-**macOS / Linux:**
+**Desktop app (beta — macOS & Windows):**
+
+Grab `PleumCloud-v…-macOS-universal.dmg` (macOS) or the `-installer.exe`
+(Windows) from
+[Releases](https://github.com/gachon-star-want/pleumcloud/releases). The
+app is unsigned for now — on macOS, strip the download quarantine once
+after dragging it to /Applications:
+
+```bash
+xattr -d com.apple.quarantine /Applications/PleumCloud.app
+```
+
+The window runs the exact same loopback core as the CLI below; closing it
+while transfers are active asks first.
+
+**macOS / Linux (CLI):**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/gachon-star-want/pleumcloud/main/scripts/install.sh | bash
