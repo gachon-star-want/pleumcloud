@@ -119,9 +119,11 @@ jobs:
       - name: Install wails CLI
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.13.0
 
-      # NSIS ships with the windows runner image; fail loudly if that
-      # ever changes — wails only warns when makensis is missing, which
-      # would silently produce no installer.
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      # Fail loudly if makensis ever falls off PATH — wails only warns
+      # when it is missing, which would silently produce no installer.
       - name: Check makensis
         run: makensis -VERSION
 
